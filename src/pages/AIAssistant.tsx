@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Send, Plus, Trash2, Sparkles, FileText, BookOpen, Languages, Brain, FileCode } from 'lucide-react';
+import { Bot, Send, Plus, Trash2, Sparkles, FileText, BookOpen, Languages, Brain, FileCode, Copy, Check, StopCircle, RotateCw } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Loading, EmptyState, ErrorState } from '../components/ui/State';
+import { Markdown } from '../components/ui/Markdown';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import type { ChatMessage } from '../lib/types';
@@ -15,29 +16,12 @@ const KINDS = [
   { id: 'notes', label: 'Generate notes', icon: BookOpen },
   { id: 'flashcards', label: 'Flashcards', icon: Brain },
   { id: 'quiz', label: 'Generate quiz', icon: Sparkles },
-  { id: 'translate', label: 'Translate EN↔TA', icon: Languages },
+  { id: 'translate', label: 'Translate', icon: Languages },
 ];
 
-// Local heuristic AI response (no external API key in this environment)
-function generateResponse(kind: string, prompt: string): string {
-  const p = prompt.trim();
-  switch (kind) {
-    case 'explain':
-      return `Here's an explanation of:\n\n${p}\n\n• Purpose: This code performs its core task by orchestrating a sequence of operations.\n• Key parts: inputs are validated, the main logic runs, and results are returned.\n• Step-by-step: 1) Accept input  2) Process  3) Return output.\n• Tip: consider edge cases (empty input, invalid types) for robustness.`;
-    case 'summarize':
-      return `Summary:\n${p.slice(0, 500)}\n\nKey points:\n• Main idea captured above\n• Supporting details condensed\n• Actionable takeaway highlighted`;
-    case 'notes':
-      return `Generated notes:\n\n# ${p.slice(0, 60) || 'Topic'}\n\n## Introduction\n- Overview of the topic\n- Why it matters\n\n## Key Concepts\n- Definition\n- Examples\n- Applications\n\n## Summary\n- Recap of main points\n- Next steps for study`;
-    case 'flashcards':
-      return `Flashcards for: ${p || 'the topic'}\n\nQ1: What is the main concept?\nA1: [Definition here]\n\nQ2: Give an example.\nA2: [Example]\n\nQ3: Why is it important?\nA3: [Reasoning]`;
-    case 'quiz':
-      return `Quiz on: ${p || 'the topic'}\n\n1. What does X mean?\n   a) ...  b) ...  c) ...\n2. Which is true?\n   a) ...  b) ...  c) ...\n3. Give an example of Y.\n\n(Answers: 1-b, 2-c, 3 — open answer)`;
-    case 'translate':
-      return `English: ${p}\nTamil (தமிழ்): ${p}\n\nNote: This is a placeholder translation. Connect a translation API for accurate EN↔TA results.`;
-    default:
-      return `You said: "${p}"\n\nI'm StudySphere's offline assistant. I can help explain code, summarize text, generate notes, flashcards, quizzes, and translate. Try one of the modes above!`;
-  }
-}
+const AI_ENDPOINT = '/api/ai-chat';
+
+type ChatApiMessage = { role: 'user' | 'assistant'; content: string };
 
 export default function AIAssistant() {
   const { user } = useAuth();
@@ -49,11 +33,14 @@ export default function AIAssistant() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const load = async () => {
     if (!user) return;
     setLoading(true);
+    setError(null);
     const { data, error } = await supabase.from('chat_history').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
     if (error) setError(error.message);
     const all = (data as ChatMessage[]) ?? [];
@@ -68,7 +55,6 @@ export default function AIAssistant() {
   useEffect(() => { load(); // eslint-disable-next-line
   }, [user]);
 
-  // load messages for active conversation
   useEffect(() => {
     if (!user || !activeConv) { setMessages([]); return; }
     (async () => {
@@ -77,34 +63,99 @@ export default function AIAssistant() {
     })();
   }, [activeConv, user]);
 
-  useEffect(() => { scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight); }, [messages]);
+  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages, busy]);
 
   const newChat = () => {
     const id = crypto.randomUUID();
     setActiveConv(id);
     setMessages([]);
+    setError(null);
     setConversations((p) => [{ id, title: 'New chat', updated: new Date().toISOString() }, ...p]);
   };
 
+  const callAI = async (prompt: string, convId: string, history: ChatMessage[]): Promise<string> => {
+    const apiHistory: ChatApiMessage[] = history
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const resp = await fetch(AI_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt, mode: kind, history: apiHistory }),
+      signal: controller.signal,
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || `Request failed (${resp.status})`);
+    return String(data.reply || '');
+  };
+
   const send = async () => {
-    if (!user || !input.trim()) return;
+    if (!user || !input.trim() || busy) return;
     const convId = activeConv || crypto.randomUUID();
     if (!activeConv) setActiveConv(convId);
-    const userMsg: ChatMessage = { id: crypto.randomUUID(), user_id: user.id, conversation_id: convId, role: 'user', content: input, kind, metadata: null, created_at: new Date().toISOString() };
+    const userContent = input;
+    const userMsg: ChatMessage = { id: crypto.randomUUID(), user_id: user.id, conversation_id: convId, role: 'user', content: userContent, kind, metadata: null, created_at: new Date().toISOString() };
+    const historyForAI = [...messages, userMsg];
     setMessages((p) => [...p, userMsg]);
-    const { error: e1 } = await supabase.from('chat_history').insert({ user_id: user.id, conversation_id: convId, role: 'user', content: input, kind });
-    if (e1) setError(e1.message);
     setInput('');
     setBusy(true);
-    const reply = generateResponse(kind, userMsg.content);
-    setTimeout(async () => {
+    setError(null);
+
+    const { error: e1 } = await supabase.from('chat_history').insert({ user_id: user.id, conversation_id: convId, role: 'user', content: userContent, kind });
+    if (e1) setError(e1.message);
+
+    try {
+      const reply = await callAI(userContent, convId, historyForAI);
       const aiMsg: ChatMessage = { id: crypto.randomUUID(), user_id: user.id, conversation_id: convId, role: 'assistant', content: reply, kind, metadata: null, created_at: new Date().toISOString() };
       setMessages((p) => [...p, aiMsg]);
-      const { error: e2 } = await supabase.from('chat_history').insert({ user_id: user.id, conversation_id: convId, role: 'assistant', content: reply, kind });
-      if (e2) setError(e2.message);
-      setBusy(false);
+      await supabase.from('chat_history').insert({ user_id: user.id, conversation_id: convId, role: 'assistant', content: reply, kind });
       load();
-    }, 600);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        // user stopped generation
+      } else {
+        const msg = e instanceof Error ? e.message : 'AI request failed.';
+        setError(msg);
+        const errMsg: ChatMessage = { id: crypto.randomUUID(), user_id: user.id, conversation_id: convId, role: 'assistant', content: `*Request failed:* ${msg}`, kind, metadata: null, created_at: new Date().toISOString() };
+        setMessages((p) => [...p, errMsg]);
+      }
+    } finally {
+      setBusy(false);
+      abortRef.current = null;
+    }
+  };
+
+  const stop = () => {
+    abortRef.current?.abort();
+    setBusy(false);
+  };
+
+  const retry = async () => {
+    setError(null);
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    if (!lastUser) return;
+    // Drop the last assistant message (error) and resend.
+    setMessages((p) => {
+      const copy = [...p];
+      if (copy.length && copy[copy.length - 1].role === 'assistant') copy.pop();
+      return copy;
+    });
+    setBusy(true);
+    try {
+      const reply = await callAI(lastUser.content, lastUser.conversation_id, messages.filter((m) => m.role !== 'assistant' || m.id !== messages[messages.length - 1]?.id));
+      const aiMsg: ChatMessage = { id: crypto.randomUUID(), user_id: user!.id, conversation_id: lastUser.conversation_id, role: 'assistant', content: reply, kind, metadata: null, created_at: new Date().toISOString() };
+      setMessages((p) => [...p, aiMsg]);
+      await supabase.from('chat_history').insert({ user_id: user!.id, conversation_id: lastUser.conversation_id, role: 'assistant', content: reply, kind });
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Retry failed.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const deleteConv = async (id: string) => {
@@ -114,6 +165,10 @@ export default function AIAssistant() {
     if (activeConv === id) { setActiveConv(null); setMessages([]); }
   };
 
+  const copyMsg = async (id: string, content: string) => {
+    try { await navigator.clipboard.writeText(content); setCopiedId(id); setTimeout(() => setCopiedId(null), 1800); } catch { /* noop */ }
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -121,7 +176,7 @@ export default function AIAssistant() {
         <p className="text-sm text-slate-500 dark:text-white/50">Chat, explain code, summarize, generate notes, flashcards, quizzes & translate.</p>
       </div>
 
-      {error && <ErrorState message={error} />}
+      {error && <ErrorState message={error} onRetry={retry} />}
 
       <div className="grid lg:grid-cols-4 gap-4 h-[70vh]">
         <GlassCard className="lg:col-span-1 p-3 flex flex-col">
@@ -153,9 +208,16 @@ export default function AIAssistant() {
             ) : (
               <AnimatePresence>
                 {messages.map((m) => (
-                  <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${m.role === 'user' ? 'gradient-brand text-white' : 'glass-strong'}`}>
-                      {m.content}
+                  <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`group flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm ${m.role === 'user' ? 'gradient-brand text-white' : 'glass-strong'}`}>
+                      {m.role === 'assistant' ? <Markdown content={m.content} /> : <span className="whitespace-pre-wrap">{m.content}</span>}
+                      {m.role === 'assistant' && (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/10 opacity-0 group-hover:opacity-100 transition">
+                          <button onClick={() => copyMsg(m.id, m.content)} className="text-xs flex items-center gap-1 text-slate-500 dark:text-white/50 hover:text-indigo-500">
+                            {copiedId === m.id ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />} Copy
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -182,8 +244,15 @@ export default function AIAssistant() {
                 rows={1}
                 className="flex-1 px-4 py-2.5 rounded-xl glass resize-none outline-none text-sm focus:ring-2 focus:ring-indigo-400/40"
               />
-              <Button onClick={send} disabled={!input.trim() || busy} size="md"><Send size={16} /></Button>
+              {busy ? (
+                <Button onClick={stop} variant="danger" size="md"><StopCircle size={16} /> Stop</Button>
+              ) : (
+                <Button onClick={send} disabled={!input.trim()} size="md"><Send size={16} /></Button>
+              )}
             </div>
+            {error && !busy && (
+              <button onClick={retry} className="mt-2 text-xs flex items-center gap-1 text-indigo-500 hover:underline"><RotateCw size={12} /> Retry last message</button>
+            )}
           </div>
         </GlassCard>
       </div>

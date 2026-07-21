@@ -64,3 +64,36 @@
 ::-webkit-scrollbar-thumb:hover { background: rgba(120,120,160,0.55); background-clip: padding-box; }
 
 .code-area { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; tab-size: 2; }
+
+/* Lightweight syntax-highlight token colors (subset of github-dark) */
+.hljs { color: #e6edf3; background: transparent; }
+.hljs-comment, .hljs-quote { color: #8b949e; font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #ff7b72; }
+.hljs-string, .hljs-attr, .hljs-meta-string { color: #a5d6ff; }
+.hljs-number, .hljs-literal { color: #79c0ff; }
+.hljs-title, .hljs-section, .hljs-name { color: #d2a8ff; }
+.hljs-type, .hljs-class .hljs-title, .hljs-title.class_ { color: #ffa657; }
+.hljs-variable, .hljs-template-variable { color: #ffa657; }
+.hljs-attribute { color: #79c0ff; }
+.hljs-deletion { color: #ffa198; background: #67060c33; }
+.hljs-addition { color: #56d364; background: #0f2a1d33; }
+
+/* Markdown chat rendering */
+.prose-chat { font-size: 14px; line-height: 1.6; word-break: break-word; }
+.prose-chat > *:first-child { margin-top: 0; }
+.prose-chat > *:last-child { margin-bottom: 0; }
+.prose-chat h1, .prose-chat h2, .prose-chat h3 { font-weight: 600; margin: 0.8em 0 0.4em; line-height: 1.25; }
+.prose-chat h1 { font-size: 1.3em; } .prose-chat h2 { font-size: 1.15em; } .prose-chat h3 { font-size: 1.05em; }
+.prose-chat p { margin: 0.5em 0; }
+.prose-chat ul, .prose-chat ol { margin: 0.4em 0; padding-left: 1.3em; }
+.prose-chat li { margin: 0.2em 0; }
+.prose-chat ul { list-style: disc; } .prose-chat ol { list-style: decimal; }
+.prose-chat strong { font-weight: 600; }
+.prose-chat em { font-style: italic; }
+.prose-chat a { color: #6366f1; text-decoration: underline; text-underline-offset: 2px; }
+.prose-chat blockquote { border-left: 3px solid rgba(99,102,241,0.4); padding-left: 0.8em; margin: 0.5em 0; color: inherit; opacity: 0.8; }
+.prose-chat hr { border: 0; border-top: 1px solid rgba(120,120,160,0.2); margin: 0.8em 0; }
+.prose-chat code:not(pre code) { background: rgba(99,102,241,0.12); padding: 0.15em 0.35em; border-radius: 4px; font-size: 0.9em; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.prose-chat table { width: 100%; border-collapse: collapse; margin: 0.6em 0; font-size: 0.9em; }
+.prose-chat th, .prose-chat td { border: 1px solid rgba(120,120,160,0.25); padding: 0.4em 0.6em; text-align: left; }
+.prose-chat th { background: rgba(99,102,241,0.08); font-weight: 600; }

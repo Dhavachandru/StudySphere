@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, RotateCw, Home, Plus, X, Search, Bookmark, Lock, Globe,
+  ArrowLeft, ArrowRight, RotateCw, Home, Plus, X, Search, Bookmark, Lock, Globe, ExternalLink, Copy, Check, Ban,
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { Input } from '../components/ui/Input';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 
@@ -12,6 +11,29 @@ type Tab = { id: string; url: string; title: string; loading: boolean; history: 
 
 const HOME = 'study://home';
 
+// Hostnames of sites that commonly block iframe embedding (X-Frame-Options / CSP frame-ancestors).
+// Matched against the hostname (without www. prefix) of the navigated URL.
+const BLOCKED_HOSTS = new Set([
+  'youtube.com',
+  'google.com',
+  'github.com',
+  'instagram.com',
+  'facebook.com',
+  'linkedin.com',
+  'x.com',
+  'twitter.com',
+  'reddit.com',
+  'netflix.com',
+  'amazon.com',
+  'whatsapp.com',
+]);
+
+function isSearchQuery(v: string): boolean {
+  // Has spaces or lacks a dot indicating a domain
+  return v.includes(' ') || (!/^[\w-]+(\.[\w-]+)+/.test(v) && !/^https?:\/\//i.test(v));
+}
+
+// Normalize raw address-bar input into a usable URL or search URL.
 function normalizeUrl(input: string): string {
   const v = input.trim();
   if (!v) return HOME;
@@ -25,6 +47,38 @@ function hostname(url: string): string {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
 }
 
+// Extract a YouTube video ID from any common URL form.
+function extractYouTubeId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const h = u.hostname.replace(/^www\./, '');
+    if (h === 'youtu.be') return u.pathname.slice(1) || null;
+    if (h === 'youtube.com' || h === 'm.youtube.com') {
+      if (u.pathname === '/watch') return u.searchParams.get('v');
+      const m = u.pathname.match(/^\/embed\/([\w-]+)/);
+      if (m) return m[1];
+      const s = u.pathname.match(/^\/shorts\/([\w-]+)/);
+      if (s) return s[1];
+    }
+  } catch { /* not a URL */ }
+  return null;
+}
+
+// Resolve a URL into the form that should actually be loaded into the iframe.
+// Returns { display, status } where status is 'embed' | 'blocked' | 'home'.
+function resolveUrl(url: string): { src: string | null; status: 'embed' | 'blocked' | 'home' } {
+  if (url === HOME) return { src: null, status: 'home' };
+
+  // YouTube video -> embeddable player
+  const ytId = extractYouTubeId(url);
+  if (ytId) return { src: `https://www.youtube.com/embed/${ytId}`, status: 'embed' };
+
+  const host = hostname(url);
+  if (BLOCKED_HOSTS.has(host)) return { src: null, status: 'blocked' };
+
+  return { src: url, status: 'embed' };
+}
+
 export default function Browser() {
   const { user } = useAuth();
   const [tabs, setTabs] = useState<Tab[]>([{ id: '1', url: HOME, title: 'New Tab', loading: false, history: [HOME], idx: 0 }]);
@@ -33,8 +87,10 @@ export default function Browser() {
   const [bookmarked, setBookmarked] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [historyRefresh, setHistoryRefresh] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const tab = tabs.find((t) => t.id === active)!;
+  const resolved = resolveUrl(tab.url);
 
   useEffect(() => {
     setAddr(tab.url === HOME ? '' : tab.url);
@@ -58,7 +114,11 @@ export default function Browser() {
     if (user && url !== HOME) {
       supabase.from('history').insert({ user_id: user.id, url, title: hostname(url) }).then(() => setHistoryRefresh((n) => n + 1));
     }
-    setTimeout(() => updateTab(tabId, { loading: false }), 1200);
+    // If the resolved page is a fallback (no iframe), loading resolves immediately.
+    const r = resolveUrl(url);
+    if (r.status !== 'embed') {
+      updateTab(tabId, { loading: false });
+    }
   };
 
   const goBack = () => {
@@ -73,10 +133,11 @@ export default function Browser() {
   };
   const refresh = () => {
     updateTab(tab.id, { loading: true });
-    setTimeout(() => updateTab(tab.id, { loading: false }), 800);
-    if (iframeRef.current && tab.url !== HOME) {
+    if (iframeRef.current && resolved.status === 'embed') {
       const src = iframeRef.current.src;
       iframeRef.current.src = src;
+    } else {
+      setTimeout(() => updateTab(tab.id, { loading: false }), 600);
     }
   };
   const goHome = () => navigate(HOME);
@@ -111,6 +172,29 @@ export default function Browser() {
     }
   };
 
+  const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
+
+  const copyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* clipboard unavailable */ }
+  };
+
+  // If the address bar contains a search query for a blocked host, open in a new tab.
+  const submitAddress = (raw: string) => {
+    const v = raw.trim();
+    if (isSearchQuery(v)) {
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(v)}`;
+      // Google search itself is blocked in iframes; open externally.
+      openExternal(searchUrl);
+      setAddr('');
+      return;
+    }
+    navigate(raw);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
@@ -142,9 +226,9 @@ export default function Browser() {
           <button onClick={refresh} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10"><RotateCw size={16} className={tab.loading ? 'animate-spin' : ''} /></button>
           <button onClick={goHome} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10"><Home size={18} /></button>
 
-          <form className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl glass" onSubmit={(e) => { e.preventDefault(); navigate(addr); }}>
+          <form className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl glass" onSubmit={(e) => { e.preventDefault(); submitAddress(addr); }}>
             <Lock size={14} className="text-emerald-500" />
-            <Input value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="Search Google or type a URL" className="border-0 bg-transparent focus:ring-0 px-0" />
+            <input value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="Search Google or type a URL" className="flex-1 bg-transparent text-sm outline-none placeholder-slate-400 dark:placeholder-white/30" />
             <button type="submit" className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10"><Search size={16} /></button>
           </form>
 
@@ -157,21 +241,67 @@ export default function Browser() {
       <GlassCard className="overflow-hidden p-0 h-[70vh]">
         <AnimatePresence mode="wait">
           <motion.div key={tab.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-            {tab.url === HOME ? (
+            {resolved.status === 'home' ? (
               <HomePage onNavigate={(u) => navigate(u)} refresh={historyRefresh} />
+            ) : resolved.status === 'blocked' ? (
+              <BlockedScreen url={tab.url} onOpen={() => openExternal(tab.url)} onCopy={() => copyUrl(tab.url)} copied={copied} />
             ) : (
-              <iframe
-                ref={iframeRef}
-                src={tab.url}
-                title={tab.title}
-                className="w-full h-full bg-white"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                onLoad={() => updateTab(tab.id, { loading: false })}
-              />
+              <div className="relative h-full">
+                {tab.loading && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-black/40 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-3">
+                      <RotateCw size={28} className="text-indigo-500 animate-spin" />
+                      <p className="text-sm text-slate-600 dark:text-white/60">Loading {hostname(tab.url)}…</p>
+                    </div>
+                  </div>
+                )}
+                <iframe
+                  ref={iframeRef}
+                  src={resolved.src ?? ''}
+                  title={tab.title}
+                  className="w-full h-full bg-white"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  onLoad={() => updateTab(tab.id, { loading: false })}
+                />
+              </div>
             )}
           </motion.div>
         </AnimatePresence>
       </GlassCard>
+    </div>
+  );
+}
+
+function BlockedScreen({ url, onOpen, onCopy, copied }: { url: string; onOpen: () => void; onCopy: () => void; copied: boolean }) {
+  return (
+    <div className="h-full flex items-center justify-center p-8 gradient-bg">
+      <div className="max-w-md text-center space-y-5">
+        <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center mx-auto">
+          <Ban size={28} className="text-slate-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold text-slate-700 dark:text-white/80">This website doesn't allow embedded browsing.</h2>
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-2 break-all">{hostname(url)}</p>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-white/40">
+          {hostname(url)} blocks being displayed inside another site for security reasons. You can open it directly in a new tab.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={onOpen}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl gradient-brand text-white text-sm font-medium shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition"
+          >
+            <ExternalLink size={16} /> Open Website
+          </button>
+          <button
+            onClick={onCopy}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl glass-strong text-sm font-medium transition"
+          >
+            {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+            {copied ? 'Copied' : 'Copy URL'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
