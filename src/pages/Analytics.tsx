@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, BookOpen, Code2, TrendingUp, Calendar, CheckCircle, Target } from 'lucide-react';
+import { BarChart3, BookOpen, Code2, TrendingUp, CheckCircle, Target } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Loading, EmptyState, ErrorState } from '../components/ui/State';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import type { AnalyticsRow, AttendanceRecord, CodingProgressRow, Assignment, StudyGoal } from '../lib/types';
+import type { AnalyticsRow, CodingProgressRow, Assignment, StudyGoal } from '../lib/types';
 
 export default function Analytics() {
   const { user } = useAuth();
   const [rows, setRows] = useState<AnalyticsRow[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [coding, setCoding] = useState<CodingProgressRow[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [goals, setGoals] = useState<StudyGoal[]>([]);
@@ -22,20 +21,17 @@ export default function Analytics() {
     if (!user) return;
     setLoading(true);
     setError(null);
-    const [a, att, cod, asg, gls] = await Promise.all([
+    const [a, cod, asg, gls] = await Promise.all([
       supabase.from('analytics').select('*').eq('user_id', user.id).order('day', { ascending: true }).limit(90),
-      supabase.from('attendance').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(200),
       supabase.from('coding_progress').select('*').eq('user_id', user.id).order('day', { ascending: true }).limit(90),
       supabase.from('assignments').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('study_goals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
     ]);
     if (a.error) setError(a.error.message);
-    if (att.error) setError(att.error.message);
     if (cod.error) setError(cod.error.message);
     if (asg.error) setError(asg.error.message);
     if (gls.error) setError(gls.error.message);
     setRows((a.data as AnalyticsRow[]) ?? []);
-    setAttendance((att.data as AttendanceRecord[]) ?? []);
     setCoding((cod.data as CodingProgressRow[]) ?? []);
     setAssignments((asg.data as Assignment[]) ?? []);
     setGoals((gls.data as StudyGoal[]) ?? []);
@@ -55,17 +51,11 @@ export default function Analytics() {
   const totalProblems = recentCoding.reduce((s, r) => s + r.problems_solved, 0);
   const avgProductivity = recent.length ? Math.round(recent.reduce((s, r) => s + r.productivity_score, 0) / recent.length) : 0;
   const completedAssignments = assignments.filter((a) => a.status === 'completed').length;
-  const attendancePct = (() => {
-    const recentAtt = attendance.slice(0, days * 2);
-    const t = recentAtt.length;
-    const p = recentAtt.filter((r) => r.status === 'present').length;
-    return t > 0 ? Math.round((p / t) * 100) : 0;
-  })();
   const goalsCompleted = goals.filter((g) => g.completed).length;
 
   const maxVal = Math.max(...recent.map((r) => Math.max(Number(r.study_hours), Number(r.coding_hours)), 1), ...recentCoding.map((r) => Number(r.hours)), 1);
 
-  const hasData = rows.length > 0 || attendance.length > 0 || coding.length > 0 || assignments.length > 0 || goals.length > 0;
+  const hasData = rows.length > 0 || coding.length > 0 || assignments.length > 0 || goals.length > 0;
 
   return (
     <div className="space-y-4">
@@ -84,7 +74,7 @@ export default function Analytics() {
       {error && <ErrorState message={error} onRetry={load} />}
 
       {loading ? <Loading /> : !hasData ? (
-        <EmptyState icon={<BarChart3 size={24} />} title="No analytics yet" hint="Use Notes, Assignments, Coding Progress or Attendance and your stats will appear here automatically." />
+        <EmptyState icon={<BarChart3 size={24} />} title="No analytics yet" hint="Use Notes, Assignments or Coding Progress and your stats will appear here automatically." />
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -92,7 +82,7 @@ export default function Analytics() {
               { label: 'Study hours', value: `${totalStudy.toFixed(1)}h`, icon: BookOpen, color: 'from-blue-500 to-indigo-500' },
               { label: 'Coding hours', value: `${totalCoding.toFixed(1)}h`, icon: Code2, color: 'from-violet-500 to-fuchsia-500' },
               { label: 'Assignments done', value: completedAssignments, icon: CheckCircle, color: 'from-emerald-500 to-teal-500' },
-              { label: 'Attendance', value: `${attendancePct}%`, icon: Calendar, color: 'from-amber-500 to-orange-500' },
+              { label: 'Goals completed', value: `${goalsCompleted}/${goals.length}`, icon: Target, color: 'from-amber-500 to-orange-500' },
             ].map((s) => (
               <GlassCard key={s.label} className="p-4">
                 <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center text-white mb-2`}><s.icon size={16} /></div>
@@ -106,8 +96,8 @@ export default function Analytics() {
             {[
               { label: 'Problems solved', value: totalProblems, icon: TrendingUp, color: 'from-rose-500 to-pink-500' },
               { label: 'Avg productivity', value: `${avgProductivity}/100`, icon: BarChart3, color: 'from-cyan-500 to-blue-500' },
-              { label: 'Goals completed', value: `${goalsCompleted}/${goals.length}`, icon: Target, color: 'from-indigo-500 to-violet-500' },
               { label: 'Total assignments', value: assignments.length, icon: CheckCircle, color: 'from-teal-500 to-emerald-500' },
+              { label: 'Total study', value: `${totalStudy.toFixed(1)}h`, icon: BookOpen, color: 'from-indigo-500 to-violet-500' },
             ].map((s) => (
               <GlassCard key={s.label} className="p-4">
                 <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center text-white mb-2`}><s.icon size={16} /></div>

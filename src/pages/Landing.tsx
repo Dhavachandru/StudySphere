@@ -1,18 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Sparkles, Globe, StickyNote, Calendar, Bot, Code2, BarChart3, ArrowRight,
+  Sparkles, StickyNote, Calendar, Bot, Code2, BarChart3, ArrowRight,
   Shield, Zap, Cloud, Layers,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 const features = [
-  { icon: Globe, title: 'AI Browser', desc: 'Browse the web with smart tabs, bookmarks, history and downloads — all in one place.' },
   { icon: StickyNote, title: 'Smart Notes', desc: 'Rich-text markdown notes with categories, pinning, favorites and autosave.' },
-  { icon: Calendar, title: 'Planner', desc: 'Timetable, attendance, exam countdown, semester tracker and GPA calculator.' },
-  { icon: Bot, title: 'AI Assistant', desc: 'ChatGPT-style chat, summarize webpages & PDFs, generate notes, flashcards & quizzes.' },
+  { icon: Calendar, title: 'Planner', desc: 'Timetable, exam countdown, semester tracker and GPA calculator.' },
+  { icon: Bot, title: 'AI Assistant', desc: 'Chat, summarize, generate notes, flashcards & quizzes with real AI.' },
   { icon: Code2, title: 'Coding Hub', desc: 'Write & preview HTML, CSS, JS, Java, Python, C and SQL with syntax highlighting.' },
   { icon: BarChart3, title: 'Analytics', desc: 'Study hours, coding streaks, productivity score, weekly & monthly charts.' },
+  { icon: Sparkles, title: 'Bookmarks & History', desc: 'Save and revisit your favorite pages, all synced securely across devices.' },
 ];
 
 export default function Landing() {
@@ -78,9 +78,9 @@ export default function Landing() {
         >
           <div className="rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 aspect-[16/9] flex">
             <div className="w-48 p-4 border-r border-white/10 hidden sm:block">
-              {[Globe, StickyNote, Calendar, Bot, Code2].map((Icon, i) => (
+              {[StickyNote, Calendar, Bot, Code2, BarChart3].map((Icon, i) => (
                 <div key={i} className="flex items-center gap-2 px-2 py-2 rounded-lg mb-1 text-slate-500 dark:text-white/50 text-sm">
-                  <Icon size={16} /> {['Browser', 'Notes', 'Planner', 'AI', 'Coding'][i]}
+                  <Icon size={16} /> {['Notes', 'Planner', 'AI', 'Coding', 'Analytics'][i]}
                 </div>
               ))}
             </div>

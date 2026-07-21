@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Sun, Cloud, CloudRain, Wind, Droplets, BookOpen, Code2, ClipboardList,
-  Calendar, TrendingUp, Flame, Clock, ArrowRight, Sparkles, Bell, Award, Target,
+  Calendar, Flame, Clock, Sparkles, Bell, Award, Target,
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Loading } from '../components/ui/State';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import type { Assignment, AnalyticsRow, PlannerEntry, AttendanceRecord, CodingProgressRow, ExamScheduleEntry, StudyGoal, Notification } from '../lib/types';
+import type { Assignment, AnalyticsRow, PlannerEntry, CodingProgressRow, ExamScheduleEntry, StudyGoal, Notification } from '../lib/types';
 
 type Weather = { temp: number; condition: string; icon: 'sun' | 'cloud' | 'rain'; humidity: number; wind: number };
 
@@ -42,7 +42,6 @@ export default function Dashboard() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsRow[]>([]);
   const [planner, setPlanner] = useState<PlannerEntry[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [coding, setCoding] = useState<CodingProgressRow[]>([]);
   const [exams, setExams] = useState<ExamScheduleEntry[]>([]);
   const [goals, setGoals] = useState<StudyGoal[]>([]);
@@ -53,11 +52,10 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       if (!user) return;
-      const [a, an, p, att, cod, exm, gls, notif] = await Promise.all([
+      const [a, an, p, cod, exm, gls, notif] = await Promise.all([
         supabase.from('assignments').select('*').eq('user_id', user.id).order('due_date', { ascending: true }).limit(5),
         supabase.from('analytics').select('*').eq('user_id', user.id).order('day', { ascending: false }).limit(30),
         supabase.from('planner').select('*').eq('user_id', user.id).eq('entry_type', 'timetable'),
-        supabase.from('attendance').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(100),
         supabase.from('coding_progress').select('*').eq('user_id', user.id).order('day', { ascending: false }).limit(30),
         supabase.from('exam_schedule').select('*').eq('user_id', user.id).order('exam_date', { ascending: true }),
         supabase.from('study_goals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
@@ -66,7 +64,6 @@ export default function Dashboard() {
       setAssignments((a.data as Assignment[]) ?? []);
       setAnalytics((an.data as AnalyticsRow[]) ?? []);
       setPlanner((p.data as PlannerEntry[]) ?? []);
-      setAttendance((att.data as AttendanceRecord[]) ?? []);
       setCoding((cod.data as CodingProgressRow[]) ?? []);
       setExams((exm.data as ExamScheduleEntry[]) ?? []);
       setGoals((gls.data as StudyGoal[]) ?? []);
@@ -93,11 +90,6 @@ export default function Dashboard() {
   const todayAnalytics = analytics.find((d) => d.day === todayStr);
   const studyHours = todayAnalytics?.study_hours ?? 0;
   const productivity = todayAnalytics?.productivity_score ?? 0;
-
-  // Attendance: percentage of present records
-  const attendancePct = attendance.length > 0
-    ? Math.round((attendance.filter((r) => r.status === 'present').length / attendance.length) * 100)
-    : 0;
 
   // Coding streak: consecutive days with coding activity up to today
   const codingStreak = (() => {
@@ -129,7 +121,6 @@ export default function Dashboard() {
     { to: '/planner', label: 'Open planner', icon: Calendar },
     { to: '/coding', label: 'Code', icon: Code2 },
     { to: '/ai', label: 'Ask AI', icon: Sparkles },
-    { to: '/browser', label: 'Browse', icon: ArrowRight },
   ];
 
   return (
@@ -170,9 +161,9 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Study progress', value: `${studyHours}h`, sub: 'today', icon: BookOpen, color: 'from-blue-500 to-indigo-500' },
-          { label: 'Attendance', value: `${attendancePct}%`, sub: `${attendance.length} records`, icon: TrendingUp, color: 'from-emerald-500 to-teal-500' },
           { label: 'Coding streak', value: `${codingStreak}d`, sub: codingStreak > 0 ? 'active' : 'start today', icon: Flame, color: 'from-orange-500 to-rose-500' },
           { label: 'Productivity', value: `${productivity}`, sub: 'score', icon: Sparkles, color: 'from-violet-500 to-fuchsia-500' },
+          { label: 'Assignments', value: `${assignments.filter((a) => a.status !== 'completed').length}`, sub: 'pending', icon: ClipboardList, color: 'from-emerald-500 to-teal-500' },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <GlassCard className="p-4">

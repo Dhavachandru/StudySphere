@@ -1,9 +1,9 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, Globe, StickyNote, Calendar, ClipboardList, Download, Bookmark,
+  LayoutDashboard, StickyNote, Calendar, ClipboardList, Bookmark,
   History, Bot, Code2, BarChart3, User, Settings, HelpCircle, LogOut, Menu, X,
-  Search, Sun, Moon, Sparkles, CalendarCheck, CalendarClock, TrendingUp, Bell,
+  Search, Sun, Moon, Sparkles, CalendarClock, TrendingUp, Bell,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
@@ -11,15 +11,12 @@ import { useTheme } from '../lib/theme';
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/browser', label: 'Browser', icon: Globe },
   { to: '/notes', label: 'Notes', icon: StickyNote },
   { to: '/planner', label: 'Planner', icon: Calendar },
   { to: '/assignments', label: 'Assignments', icon: ClipboardList },
-  { to: '/attendance', label: 'Attendance', icon: CalendarCheck },
   { to: '/exams', label: 'Exam Schedule', icon: CalendarClock },
   { to: '/coding-progress', label: 'Coding Progress', icon: TrendingUp },
   { to: '/notifications', label: 'Notifications', icon: Bell },
-  { to: '/downloads', label: 'Downloads', icon: Download },
   { to: '/bookmarks', label: 'Bookmarks', icon: Bookmark },
   { to: '/history', label: 'History', icon: History },
   { to: '/ai', label: 'AI Assistant', icon: Bot },
@@ -126,7 +123,7 @@ export function Layout() {
               <input
                 placeholder="Search StudySphere…"
                 className="bg-transparent text-sm outline-none w-full placeholder-slate-400"
-                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/browser'); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/bookmarks'); }}
               />
             </div>
 

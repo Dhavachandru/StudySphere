@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { HelpCircle, Search, ChevronDown, BookOpen, Bot, Globe, Code2, Calendar, Cloud } from 'lucide-react';
+import { HelpCircle, Search, ChevronDown, BookOpen, Bot, Code2, Calendar, Cloud, Bookmark } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
 
 const FAQS = [
   { q: 'How do I create an account?', a: 'Click "Get started" on the landing page, enter your email and password, or sign up with Google. Your profile is created automatically.' },
   { q: 'Is my data secure?', a: 'Yes. Every table uses Row Level Security — you can only ever read or write your own data. Sessions persist securely across devices via Supabase Auth.' },
-  { q: 'How does the browser work?', a: 'Open the Browser page, type a URL or search query in the address bar. You can open multiple tabs, bookmark pages, and review your history.' },
-  { q: 'Can I use the AI Assistant offline?', a: 'The assistant runs locally for explanations, summaries, notes, flashcards, quizzes and translations. No external API key is required.' },
+  { q: 'How does the AI Assistant work?', a: 'Open the AI Assistant page, choose a mode (chat, explain code, summarize, notes, flashcards, quiz, or translate), and type your message. Responses are generated in real time and saved to your chat history.' },
   { q: 'How do notes autosave work?', a: 'Every keystroke triggers a debounced save to your database. Your note is preserved even if you switch tabs or reload.' },
   { q: 'Which languages does Coding Hub support?', a: 'HTML, CSS, JavaScript, Java, Python, C and SQL. HTML/CSS/JS get a live preview; others show the code in a syntax-styled view.' },
   { q: 'How do I track my GPA and attendance?', a: 'Open the Planner page and switch to the GPA or Attendance tab. Add an entry and your stats update instantly.' },
@@ -17,10 +16,10 @@ const FAQS = [
 
 const GUIDES = [
   { icon: BookOpen, title: 'Getting started', desc: 'Set up your profile and navigate the workspace.' },
-  { icon: Globe, title: 'Using the browser', desc: 'Tabs, bookmarks, history and downloads.' },
+  { icon: Bookmark, title: 'Bookmarks & history', desc: 'Save and revisit your favorite pages.' },
   { icon: Bot, title: 'AI Assistant', desc: 'Chat, summarize, generate notes and quizzes.' },
   { icon: Code2, title: 'Coding Hub', desc: 'Write and preview code across 7 languages.' },
-  { icon: Calendar, title: 'Planner', desc: 'Timetable, exams, attendance and GPA.' },
+  { icon: Calendar, title: 'Planner', desc: 'Timetable, exams, study goals and GPA.' },
   { icon: Cloud, title: 'Sync & security', desc: 'How your data is stored and protected.' },
 ];
 
