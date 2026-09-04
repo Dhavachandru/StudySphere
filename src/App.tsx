@@ -26,6 +26,8 @@ const HelpCenter = lazy(() => import('./pages/HelpCenter'));
 const ExamSchedule = lazy(() => import('./pages/ExamSchedule'));
 const CodingProgress = lazy(() => import('./pages/CodingProgress'));
 const Notifications = lazy(() => import('./pages/Notifications'));
+const Connect = lazy(() => import('./pages/Connect'));
+const GroupStudy = lazy(() => import('./pages/GroupStudy'));
 
 function Protected({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -74,6 +76,8 @@ function AppRoutes() {
         <Route path="/exams" element={<Lazy><ExamSchedule /></Lazy>} />
         <Route path="/coding-progress" element={<Lazy><CodingProgress /></Lazy>} />
         <Route path="/notifications" element={<Lazy><Notifications /></Lazy>} />
+        <Route path="/connect" element={<Lazy><Connect /></Lazy>} />
+        <Route path="/group-study" element={<Lazy><GroupStudy /></Lazy>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

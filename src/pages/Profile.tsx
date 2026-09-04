@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Award, GraduationCap, Mail, Edit2, Trophy, Flame, BookOpen, Clock } from 'lucide-react';
+import { User, Award, GraduationCap, Mail, Edit2, Trophy, Flame, BookOpen, Clock, AtSign } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
@@ -15,7 +15,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ full_name: '', college: '', department: '', semester: 1, bio: '', avatar_url: '' });
+  const [form, setForm] = useState({ full_name: '', username: '', college: '', department: '', semester: 1, bio: '', avatar_url: '' });
 
   useEffect(() => {
     (async () => {
@@ -32,13 +32,14 @@ export default function Profile() {
   }, [user]);
 
   useEffect(() => {
-    if (profile) setForm({ full_name: profile.full_name || '', college: profile.college || '', department: profile.department || '', semester: profile.semester ?? 1, bio: profile.bio || '', avatar_url: profile.avatar_url || '' });
+    if (profile) setForm({ full_name: profile.full_name || '', username: profile.username || '', college: profile.college || '', department: profile.department || '', semester: profile.semester ?? 1, bio: profile.bio || '', avatar_url: profile.avatar_url || '' });
   }, [profile]);
 
   const save = async () => {
     if (!user) return;
     if (!form.full_name.trim()) { setError('Full name is required.'); return; }
-    const { error } = await supabase.from('profiles').update({ full_name: form.full_name, college: form.college, department: form.department, semester: form.semester, bio: form.bio, avatar_url: form.avatar_url || null, updated_at: new Date().toISOString() }).eq('id', user.id);
+    const cleanedUsername = form.username.trim().toLowerCase().replace(/^@/, '').replace(/[^a-z0-9_]/g, '') || null;
+    const { error } = await supabase.from('profiles').update({ full_name: form.full_name, username: cleanedUsername, college: form.college, department: form.department, semester: form.semester, bio: form.bio, avatar_url: form.avatar_url || null, updated_at: new Date().toISOString() }).eq('id', user.id);
     if (error) { setError(error.message); return; }
     await refreshProfile();
     setOpen(false);
@@ -71,6 +72,7 @@ export default function Profile() {
               {profile.department && <span className="flex items-center gap-1"><BookOpen size={14} /> {profile.department}</span>}
               {profile.semester && <span className="flex items-center gap-1"><Clock size={14} /> Semester {profile.semester}</span>}
             </div>
+            {profile.username && <p className="flex items-center gap-1 text-xs text-indigo-500 mt-1"><AtSign size={12} /> {profile.username}</p>}
             {user?.email && <p className="flex items-center gap-1 text-xs text-slate-400 mt-1"><Mail size={12} /> {user.email}</p>}
             {profile.bio && <p className="text-sm text-slate-600 dark:text-white/70 mt-2 max-w-md">{profile.bio}</p>}
           </div>
@@ -114,6 +116,7 @@ export default function Profile() {
         <div className="space-y-3">
           <Input placeholder="Avatar URL (optional)" value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} />
           <Input placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+          <Input placeholder="Username (e.g. alex_studies)" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           <Input placeholder="College" value={form.college} onChange={(e) => setForm({ ...form, college: e.target.value })} />
           <Input placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
           <Input type="number" min={1} max={12} placeholder="Semester" value={form.semester} onChange={(e) => setForm({ ...form, semester: Number(e.target.value) })} />

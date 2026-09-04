@@ -1,5 +1,6 @@
 export type Profile = {
   id: string;
+  username: string | null;
   full_name: string | null;
   avatar_url: string | null;
   college: string | null;
@@ -10,6 +11,34 @@ export type Profile = {
   statistics: Record<string, number> | null;
   created_at?: string;
   updated_at?: string;
+};
+
+export type Friendship = {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StudyGroup = {
+  id: string;
+  name: string;
+  description: string | null;
+  owner_id: string;
+  subject: string | null;
+  max_members: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StudyGroupMember = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
 };
 
 export type Subject = {

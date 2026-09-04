@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, StickyNote, Calendar, ClipboardList, Bookmark,
   History, Bot, Code2, BarChart3, User, Settings, HelpCircle, LogOut, Menu, X,
-  Search, Sun, Moon, Sparkles, CalendarClock, TrendingUp, Bell,
+  Search, Sun, Moon, Sparkles, CalendarClock, TrendingUp, Bell, Users, GraduationCap,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
@@ -21,6 +21,8 @@ const nav = [
   { to: '/history', label: 'History', icon: History },
   { to: '/ai', label: 'AI Assistant', icon: Bot },
   { to: '/coding', label: 'Coding Hub', icon: Code2 },
+  { to: '/connect', label: 'Connect', icon: Users },
+  { to: '/group-study', label: 'Group Study', icon: GraduationCap },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/profile', label: 'Profile', icon: User },
   { to: '/settings', label: 'Settings', icon: Settings },
