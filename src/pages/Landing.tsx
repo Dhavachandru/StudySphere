@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Sparkles, StickyNote, Calendar, Bot, Code2, BarChart3, ArrowRight,
-  Shield, Zap, Cloud, Layers,
+  Shield, Zap, Cloud, Layers, Users,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
@@ -10,9 +10,9 @@ const features = [
   { icon: StickyNote, title: 'Smart Notes', desc: 'Rich-text markdown notes with categories, pinning, favorites and autosave.' },
   { icon: Calendar, title: 'Planner', desc: 'Timetable, exam countdown, semester tracker and GPA calculator.' },
   { icon: Bot, title: 'AI Assistant', desc: 'Chat, summarize, generate notes, flashcards & quizzes with real AI.' },
-  { icon: Code2, title: 'Coding Hub', desc: 'Write & preview HTML, CSS, JS, Java, Python, C and SQL with syntax highlighting.' },
+  { icon: Code2, title: 'Coding Hub', desc: 'Write & preview HTML, CSS, JavaScript, and Python with live output right in your browser.' },
   { icon: BarChart3, title: 'Analytics', desc: 'Study hours, coding streaks, productivity score, weekly & monthly charts.' },
-  { icon: Sparkles, title: 'Bookmarks & History', desc: 'Save and revisit your favorite pages, all synced securely across devices.' },
+  { icon: Users, title: 'Connect & Group Study', desc: 'Find friends by username, send requests, and create study groups to learn together.' },
 ];
 
 export default function Landing() {

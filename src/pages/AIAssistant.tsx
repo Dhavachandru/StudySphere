@@ -19,7 +19,7 @@ const KINDS = [
   { id: 'translate', label: 'Translate', icon: Languages },
 ];
 
-const AI_ENDPOINT = '/api/ai-chat';
+const AI_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 type ChatApiMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -81,10 +81,17 @@ export default function AIAssistant() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const { data: session } = await supabase.auth.getSession();
+    const token = session?.session?.access_token;
+
     const resp = await fetch(AI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: prompt, mode: kind, history: apiHistory }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ message: prompt, mode: kind, history: apiHistory, conversation_id: convId, user_id: user?.id }),
       signal: controller.signal,
     });
 

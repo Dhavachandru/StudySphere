@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { HelpCircle, Search, ChevronDown, BookOpen, Bot, Code2, Calendar, Cloud, Bookmark } from 'lucide-react';
+import { HelpCircle, Search, ChevronDown, BookOpen, Bot, Code2, Calendar, Cloud, Users } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
 
@@ -9,14 +9,14 @@ const FAQS = [
   { q: 'Is my data secure?', a: 'Yes. Every table uses Row Level Security — you can only ever read or write your own data. Sessions persist securely across devices via Supabase Auth.' },
   { q: 'How does the AI Assistant work?', a: 'Open the AI Assistant page, choose a mode (chat, explain code, summarize, notes, flashcards, quiz, or translate), and type your message. Responses are generated in real time and saved to your chat history.' },
   { q: 'How do notes autosave work?', a: 'Every keystroke triggers a debounced save to your database. Your note is preserved even if you switch tabs or reload.' },
-  { q: 'Which languages does Coding Hub support?', a: 'HTML, CSS, JavaScript, Java, Python, C and SQL. HTML/CSS/JS get a live preview; others show the code in a syntax-styled view.' },
+  { q: 'Which languages does Coding Hub support?', a: 'HTML, CSS, JavaScript, and Python. HTML/CSS/JS get a live preview in an iframe, and Python runs directly in your browser via Pyodide.' },
   { q: 'How do I track my GPA and attendance?', a: 'Open the Planner page and switch to the GPA or Attendance tab. Add an entry and your stats update instantly.' },
-  { q: 'Can I export my bookmarks?', a: 'Yes — on the Bookmarks page, click Export to download a JSON file, and Import to restore it later.' },
+  { q: 'How do I find and add friends?', a: 'Go to the Connect page, search for other students by username, and send friend requests. Once accepted, you can invite them to study groups.' },
 ];
 
 const GUIDES = [
   { icon: BookOpen, title: 'Getting started', desc: 'Set up your profile and navigate the workspace.' },
-  { icon: Bookmark, title: 'Bookmarks & history', desc: 'Save and revisit your favorite pages.' },
+  { icon: Users, title: 'Connect & Group Study', desc: 'Find friends and study together.' },
   { icon: Bot, title: 'AI Assistant', desc: 'Chat, summarize, generate notes and quizzes.' },
   { icon: Code2, title: 'Coding Hub', desc: 'Write and preview code across 7 languages.' },
   { icon: Calendar, title: 'Planner', desc: 'Timetable, exams, study goals and GPA.' },

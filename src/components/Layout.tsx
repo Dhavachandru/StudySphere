@@ -1,8 +1,8 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, StickyNote, Calendar, ClipboardList, Bookmark,
-  History, Bot, Code2, BarChart3, User, Settings, HelpCircle, LogOut, Menu, X,
+  LayoutDashboard, StickyNote, Calendar, ClipboardList,
+  Bot, Code2, BarChart3, User, Settings, HelpCircle, LogOut, Menu, X,
   Search, Sun, Moon, Sparkles, CalendarClock, TrendingUp, Bell, Users, GraduationCap,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -17,8 +17,6 @@ const nav = [
   { to: '/exams', label: 'Exam Schedule', icon: CalendarClock },
   { to: '/coding-progress', label: 'Coding Progress', icon: TrendingUp },
   { to: '/notifications', label: 'Notifications', icon: Bell },
-  { to: '/bookmarks', label: 'Bookmarks', icon: Bookmark },
-  { to: '/history', label: 'History', icon: History },
   { to: '/ai', label: 'AI Assistant', icon: Bot },
   { to: '/coding', label: 'Coding Hub', icon: Code2 },
   { to: '/connect', label: 'Connect', icon: Users },
@@ -125,7 +123,7 @@ export function Layout() {
               <input
                 placeholder="Search StudySphere…"
                 className="bg-transparent text-sm outline-none w-full placeholder-slate-400"
-                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/bookmarks'); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/planner'); }}
               />
             </div>
 

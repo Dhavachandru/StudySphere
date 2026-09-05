@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 
 export default function Profile() {
   const { user, profile, refreshProfile } = useAuth();
-  const [stats, setStats] = useState({ notes: 0, assignments: 0, bookmarks: 0, history: 0 });
+  const [stats, setStats] = useState({ notes: 0, assignments: 0, friends: 0, groups: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -20,13 +20,13 @@ export default function Profile() {
   useEffect(() => {
     (async () => {
       if (!user) return;
-      const [n, a, b, h] = await Promise.all([
+      const [n, a, f, g] = await Promise.all([
         supabase.from('notes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('assignments').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('bookmarks').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('history').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'accepted').or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
+        supabase.from('study_group_members').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
       ]);
-      setStats({ notes: n.count ?? 0, assignments: a.count ?? 0, bookmarks: b.count ?? 0, history: h.count ?? 0 });
+      setStats({ notes: n.count ?? 0, assignments: a.count ?? 0, friends: f.count ?? 0, groups: g.count ?? 0 });
       setLoading(false);
     })();
   }, [user]);
@@ -83,8 +83,8 @@ export default function Profile() {
         {[
           { label: 'Notes', value: stats.notes, icon: BookOpen, color: 'from-blue-500 to-indigo-500' },
           { label: 'Assignments', value: stats.assignments, icon: Award, color: 'from-emerald-500 to-teal-500' },
-          { label: 'Bookmarks', value: stats.bookmarks, icon: User, color: 'from-amber-500 to-orange-500' },
-          { label: 'Pages visited', value: stats.history, icon: Flame, color: 'from-violet-500 to-fuchsia-500' },
+          { label: 'Friends', value: stats.friends, icon: User, color: 'from-amber-500 to-orange-500' },
+          { label: 'Study groups', value: stats.groups, icon: Flame, color: 'from-violet-500 to-fuchsia-500' },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <GlassCard className="p-4">

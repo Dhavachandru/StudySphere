@@ -15,8 +15,6 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Notes = lazy(() => import('./pages/Notes'));
 const Planner = lazy(() => import('./pages/Planner'));
 const Assignments = lazy(() => import('./pages/Assignments'));
-const Bookmarks = lazy(() => import('./pages/Bookmarks'));
-const History = lazy(() => import('./pages/History'));
 const AIAssistant = lazy(() => import('./pages/AIAssistant'));
 const CodingHub = lazy(() => import('./pages/CodingHub'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -65,8 +63,6 @@ function AppRoutes() {
         <Route path="/notes" element={<Lazy><Notes /></Lazy>} />
         <Route path="/planner" element={<Lazy><Planner /></Lazy>} />
         <Route path="/assignments" element={<Lazy><Assignments /></Lazy>} />
-        <Route path="/bookmarks" element={<Lazy><Bookmarks /></Lazy>} />
-        <Route path="/history" element={<Lazy><History /></Lazy>} />
         <Route path="/ai" element={<Lazy><AIAssistant /></Lazy>} />
         <Route path="/coding" element={<Lazy><CodingHub /></Lazy>} />
         <Route path="/analytics" element={<Lazy><Analytics /></Lazy>} />

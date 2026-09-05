@@ -2,16 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Sun, Cloud, CloudRain, Wind, Droplets, BookOpen, Code2, ClipboardList,
-  Calendar, Flame, Clock, Sparkles, Bell, Award, Target,
+  BookOpen, ClipboardList, Calendar, Flame, Sparkles, Bell, Award, Target, TrendingUp,
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Loading } from '../components/ui/State';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import type { Assignment, AnalyticsRow, PlannerEntry, CodingProgressRow, ExamScheduleEntry, StudyGoal, Notification } from '../lib/types';
-
-type Weather = { temp: number; condition: string; icon: 'sun' | 'cloud' | 'rain'; humidity: number; wind: number };
 
 function useClock() {
   const [now, setNow] = useState(new Date());
@@ -30,12 +27,6 @@ function greeting(h: number) {
   return 'Good night';
 }
 
-const WeatherIcon = ({ w }: { w: Weather['icon'] }) => {
-  if (w === 'sun') return <Sun className="text-amber-400" size={28} />;
-  if (w === 'cloud') return <Cloud className="text-slate-300" size={28} />;
-  return <CloudRain className="text-sky-400" size={28} />;
-};
-
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const now = useClock();
@@ -46,7 +37,6 @@ export default function Dashboard() {
   const [exams, setExams] = useState<ExamScheduleEntry[]>([]);
   const [goals, setGoals] = useState<StudyGoal[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [weather, setWeather] = useState<Weather | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,29 +59,16 @@ export default function Dashboard() {
       setGoals((gls.data as StudyGoal[]) ?? []);
       setNotifications((notif.data as Notification[]) ?? []);
       setLoading(false);
-
-      try {
-        const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=13.08&longitude=80.27&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code');
-        const j = await r.json();
-        const code = j.current.weather_code;
-        const cond = code === 0 ? 'Clear' : code <= 3 ? 'Partly cloudy' : code <= 48 ? 'Foggy' : code <= 67 ? 'Rainy' : code <= 77 ? 'Snowy' : 'Stormy';
-        const icon: Weather['icon'] = code === 0 ? 'sun' : code <= 3 ? 'cloud' : 'rain';
-        setWeather({ temp: Math.round(j.current.temperature_2m), condition: cond, icon, humidity: j.current.relative_humidity_2m, wind: Math.round(j.current.wind_speed_10m) });
-      } catch {
-        setWeather({ temp: 28, condition: 'Clear', icon: 'sun', humidity: 60, wind: 10 });
-      }
     })();
   }, [user]);
 
   if (loading) return <Loading label="Loading your workspace…" />;
 
-  // Auto-calculate stats from real data
   const todayStr = now.toISOString().slice(0, 10);
   const todayAnalytics = analytics.find((d) => d.day === todayStr);
   const studyHours = todayAnalytics?.study_hours ?? 0;
   const productivity = todayAnalytics?.productivity_score ?? 0;
 
-  // Coding streak: consecutive days with coding activity up to today
   const codingStreak = (() => {
     if (coding.length === 0) return 0;
     const sorted = [...coding].sort((a, b) => b.day.localeCompare(a.day));
@@ -115,13 +92,27 @@ export default function Dashboard() {
   const unreadNotifs = notifications.filter((n) => !n.read);
   const dailyGoals = goals.filter((g) => g.period === 'daily' && !g.completed);
 
-  const quickActions = [
-    { to: '/notes', label: 'New note', icon: BookOpen },
-    { to: '/assignments', label: 'Add assignment', icon: ClipboardList },
-    { to: '/planner', label: 'Open planner', icon: Calendar },
-    { to: '/coding', label: 'Code', icon: Code2 },
-    { to: '/ai', label: 'Ask AI', icon: Sparkles },
-  ];
+  // Build last-14-days activity series for the graph
+  const activityDays = (() => {
+    const days: { date: string; label: string; study: number; coding: number }[] = [];
+    const today = new Date(todayStr);
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(today.getTime() - i * 86400000);
+      const ds = d.toISOString().slice(0, 10);
+      const aRow = analytics.find((a) => a.day === ds);
+      const cRow = coding.find((c) => c.day === ds);
+      days.push({
+        date: ds,
+        label: d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 1),
+        study: aRow?.study_hours ?? 0,
+        coding: cRow?.hours ?? 0,
+      });
+    }
+    return days;
+  })();
+  const maxActivity = Math.max(1, ...activityDays.map((d) => Math.max(d.study, d.coding)));
+  const totalStudyThisWeek = activityDays.slice(-7).reduce((s, d) => s + d.study, 0);
+  const totalCodingThisWeek = activityDays.slice(-7).reduce((s, d) => s + d.coding, 0);
 
   return (
     <div className="space-y-6">
@@ -135,27 +126,12 @@ export default function Dashboard() {
             {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {unreadNotifs.length > 0 && (
-            <Link to="/notifications" className="relative p-2 rounded-xl glass hover:bg-white/70 dark:hover:bg-white/10">
-              <Bell size={18} className="text-indigo-500" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center">{unreadNotifs.length}</span>
-            </Link>
-          )}
-          {weather && (
-            <GlassCard className="px-4 py-3 flex items-center gap-3">
-              <WeatherIcon w={weather.icon} />
-              <div>
-                <p className="font-semibold leading-tight">{weather.temp}°C</p>
-                <p className="text-xs text-slate-500 dark:text-white/50">{weather.condition}</p>
-              </div>
-              <div className="ml-2 flex flex-col text-xs text-slate-500 dark:text-white/50 gap-0.5">
-                <span className="flex items-center gap-1"><Droplets size={11} /> {weather.humidity}%</span>
-                <span className="flex items-center gap-1"><Wind size={11} /> {weather.wind} km/h</span>
-              </div>
-            </GlassCard>
-          )}
-        </div>
+        {unreadNotifs.length > 0 && (
+          <Link to="/notifications" className="relative p-2 rounded-xl glass hover:bg-white/70 dark:hover:bg-white/10">
+            <Bell size={18} className="text-indigo-500" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center">{unreadNotifs.length}</span>
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -176,6 +152,45 @@ export default function Dashboard() {
           </motion.div>
         ))}
       </div>
+
+      <GlassCard className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
+          <h2 className="font-semibold flex items-center gap-2"><TrendingUp size={18} className="text-indigo-500" /> Study & coding activity</h2>
+          <div className="flex items-center gap-4 text-xs">
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gradient-to-br from-blue-500 to-indigo-500" /> Study {totalStudyThisWeek.toFixed(1)}h</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gradient-to-br from-violet-500 to-fuchsia-500" /> Coding {totalCodingThisWeek.toFixed(1)}h</span>
+          </div>
+        </div>
+        <div className="flex items-end justify-between gap-1.5 h-44">
+          {activityDays.map((d, i) => (
+            <div key={d.date} className="flex-1 flex flex-col items-center gap-1 group">
+              <div className="w-full flex items-end justify-center gap-0.5 h-32 relative">
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${(d.study / maxActivity) * 100}%` }}
+                  transition={{ delay: i * 0.03, type: 'spring', damping: 20 }}
+                  className="w-2.5 rounded-t bg-gradient-to-br from-blue-500 to-indigo-500 min-h-[2px]"
+                  title={`Study: ${d.study}h`}
+                />
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${(d.coding / maxActivity) * 100}%` }}
+                  transition={{ delay: i * 0.03 + 0.05, type: 'spring', damping: 20 }}
+                  className="w-2.5 rounded-t bg-gradient-to-br from-violet-500 to-fuchsia-500 min-h-[2px]"
+                  title={`Coding: ${d.coding}h`}
+                />
+                <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition pointer-events-none bg-slate-800 text-white text-[10px] rounded px-1.5 py-0.5 whitespace-nowrap z-10">
+                  {d.study}h · {d.coding}h
+                </div>
+              </div>
+              <span className="text-[10px] text-slate-400">{d.label}</span>
+            </div>
+          ))}
+        </div>
+        {analytics.length === 0 && coding.length === 0 && (
+          <p className="text-sm text-slate-500 dark:text-white/50 text-center mt-4">No activity yet — start studying or coding to see your graph grow.</p>
+        )}
+      </GlassCard>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <GlassCard className="p-5 lg:col-span-2">
@@ -297,36 +312,6 @@ export default function Dashboard() {
               ))}
             </div>
           )}
-        </GlassCard>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        <GlassCard className="p-5 lg:col-span-2">
-          <h2 className="font-semibold mb-4">Quick actions</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {quickActions.map(({ to, label, icon: Icon }) => (
-              <Link key={to} to={to} className="group flex items-center gap-3 p-3 rounded-xl glass hover:-translate-y-0.5 transition">
-                <div className="w-9 h-9 rounded-lg gradient-brand flex items-center justify-center text-white"><Icon size={16} /></div>
-                <span className="text-sm font-medium">{label}</span>
-              </Link>
-            ))}
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-5">
-          <h2 className="font-semibold mb-4 flex items-center gap-2"><Clock size={18} className="text-indigo-500" /> Recent activity</h2>
-          <div className="space-y-2">
-            {analytics.slice(0, 5).map((d) => (
-              <div key={d.id} className="flex items-center justify-between text-sm">
-                <span className="text-slate-500 dark:text-white/50">{new Date(d.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                <div className="flex gap-3 text-xs">
-                  <span className="text-blue-500">{d.study_hours}h study</span>
-                  <span className="text-violet-500">{d.coding_hours}h code</span>
-                </div>
-              </div>
-            ))}
-            {analytics.length === 0 && <p className="text-sm text-slate-500 dark:text-white/50 text-center py-6">No activity recorded yet.</p>}
-          </div>
         </GlassCard>
       </div>
     </div>
