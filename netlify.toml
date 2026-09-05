@@ -1,16 +1,6 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  functions = "netlify/functions"
-
-[functions]
-  node_bundler = "esbuild"
-
-# Expose the AI function at a stable /api path (must come before the catch-all)
-[[redirects]]
-  from = "/api/ai-chat"
-  to = "/.netlify/functions/ai-chat"
-  status = 200
 
 # SPA fallback so client-side routes resolve to index.html (must be last)
 [[redirects]]
