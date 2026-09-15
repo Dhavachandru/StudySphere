@@ -121,9 +121,14 @@ export function Layout() {
             <div className="flex-1 max-w-md hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl glass">
               <Search size={16} className="text-slate-400" />
               <input
-                placeholder="Search StudySphere…"
+                placeholder="Search students, friends or notes…"
                 className="bg-transparent text-sm outline-none w-full placeholder-slate-400"
-                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/planner'); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const q = e.currentTarget.value.trim();
+                    if (q) navigate(`/connect?q=${encodeURIComponent(q)}`);
+                  }
+                }}
               />
             </div>
 

@@ -1,12 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useId } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Search, UserPlus, Check, X, Users, UserCheck, Clock, AtSign, Loader2,
+  Search, UserPlus, Check, X, Users, UserCheck, Clock, AtSign, Loader2, ExternalLink
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loading, EmptyState, ErrorState } from '../components/ui/State';
+import { FriendProfileModal } from '../components/social/FriendProfileModal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import type { Profile, Friendship } from '../lib/types';
@@ -15,6 +17,7 @@ type FriendWithProfile = Friendship & { profile: Profile };
 
 export default function Connect() {
   const { user, profile, refreshProfile } = useAuth();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Profile[]>([]);
@@ -28,6 +31,9 @@ export default function Connect() {
   const [usernameDraft, setUsernameDraft] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  // Selected profile for Instagram-style view modal
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -72,20 +78,45 @@ export default function Connect() {
     if (profile) setUsernameDraft(profile.username ?? '');
   }, [profile]);
 
-  const doSearch = async () => {
-    const q = query.trim().toLowerCase().replace(/^@/, '');
+  // Search by BOTH username and full_name
+  const doSearch = useCallback(async (customQuery?: string) => {
+    const text = customQuery !== undefined ? customQuery : query;
+    const q = text.trim().toLowerCase().replace(/^@/, '');
     if (!q) { setResults([]); setSearched(false); return; }
     setSearching(true);
     setSearched(true);
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .ilike('username', `%${q}%`)
+      .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
       .neq('id', user?.id ?? '')
-      .limit(12);
+      .limit(16);
     setResults((data as Profile[]) ?? []);
     setSearching(false);
-  };
+  }, [query, user]);
+
+  // URL search param ?q=
+  useEffect(() => {
+    const paramQ = searchParams.get('q');
+    if (paramQ) {
+      setQuery(paramQ);
+      doSearch(paramQ);
+    }
+  }, [searchParams, doSearch]);
+
+  // Debounced auto-search when query changes
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      doSearch(q);
+    }, 280);
+    return () => clearTimeout(timer);
+  }, [query, doSearch]);
 
   const sendRequest = async (targetId: string) => {
     if (!user) return;
@@ -143,6 +174,17 @@ export default function Connect() {
   const isFriend = (pid: string) => friends.some((f) => f.profile.id === pid);
   const isPending = (pid: string) => outgoing.some((f) => f.profile.id === pid);
 
+  const getFriendshipInfo = (pid: string): { status: 'friend' | 'incoming' | 'outgoing' | 'none' | 'self'; friendship: Friendship | null } => {
+    if (pid === user?.id) return { status: 'self', friendship: null };
+    const fr = friends.find((f) => f.profile.id === pid);
+    if (fr) return { status: 'friend', friendship: fr };
+    const inc = incoming.find((f) => f.profile.id === pid);
+    if (inc) return { status: 'incoming', friendship: inc };
+    const out = outgoing.find((f) => f.profile.id === pid);
+    if (out) return { status: 'outgoing', friendship: out };
+    return { status: 'none', friendship: null };
+  };
+
   const Avatar = ({ p, size = 40 }: { p: Profile; size?: number }) => {
     const initials = (p.full_name || p.username || 'S').slice(0, 1).toUpperCase();
     return (
@@ -182,19 +224,26 @@ export default function Connect() {
 
       {/* Search */}
       <GlassCard className="p-5">
-        <h2 className="font-semibold flex items-center gap-2 mb-3"><Search size={18} className="text-indigo-500" /> Find friends</h2>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Search size={18} className="text-indigo-500" /> Find friends & students
+          </h2>
+          <span className="text-xs text-slate-400 hidden sm:inline">
+            Click any student to view their Instagram-style profile
+          </span>
+        </div>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
-              placeholder="Search by username…"
+              placeholder="Search by name or @username…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && doSearch()}
               className="pl-10"
             />
           </div>
-          <Button onClick={doSearch} loading={searching}>Search</Button>
+          <Button onClick={() => doSearch()} loading={searching}>Search</Button>
         </div>
 
         {searched && (
@@ -202,24 +251,49 @@ export default function Connect() {
             {searching ? (
               <div className="flex justify-center py-6"><Loader2 className="animate-spin text-indigo-500" size={22} /></div>
             ) : results.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-white/50 text-center py-6">No users found. Try a different username.</p>
+              <p className="text-sm text-slate-500 dark:text-white/50 text-center py-6">No users found. Try a different name or username.</p>
             ) : (
               results.map((p, i) => (
-                <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 p-3 rounded-xl glass">
-                  <Avatar p={p} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{p.full_name || 'Student'}</p>
-                    <p className="text-xs text-indigo-500 truncate">@{p.username}</p>
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  onClick={() => setSelectedProfile(p)}
+                  className="flex items-center gap-3 p-3 rounded-2xl glass hover:bg-white/80 dark:hover:bg-white/10 transition cursor-pointer group border border-transparent hover:border-indigo-500/30"
+                >
+                  <div className="p-[2px] rounded-full group-hover:bg-gradient-to-tr group-hover:from-amber-500 group-hover:via-rose-500 group-hover:to-indigo-500 transition">
+                    <Avatar p={p} />
                   </div>
-                  {isFriend(p.id) ? (
-                    <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium"><UserCheck size={15} /> Friends</span>
-                  ) : isPending(p.id) ? (
-                    <span className="flex items-center gap-1 text-xs text-slate-400"><Clock size={14} /> Requested</span>
-                  ) : (
-                    <Button size="sm" variant="secondary" onClick={() => sendRequest(p.id)} loading={busyId === p.id}>
-                      <UserPlus size={14} /> Add
-                    </Button>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm truncate group-hover:text-indigo-400 transition">
+                        {p.full_name || 'Student'}
+                      </p>
+                      <span className="text-[10px] text-slate-400 group-hover:text-indigo-300 transition flex items-center gap-0.5">
+                        <ExternalLink size={10} /> View
+                      </span>
+                    </div>
+                    <p className="text-xs text-indigo-500 truncate">
+                      {p.username ? `@${p.username}` : 'Student'}
+                      {p.college ? ` · ${p.college}` : ''}
+                    </p>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    {isFriend(p.id) ? (
+                      <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium px-2 py-1 rounded-lg bg-emerald-500/10">
+                        <UserCheck size={14} /> Friends
+                      </span>
+                    ) : isPending(p.id) ? (
+                      <span className="flex items-center gap-1 text-xs text-slate-400 px-2 py-1 rounded-lg bg-white/5">
+                        <Clock size={14} /> Requested
+                      </span>
+                    ) : (
+                      <Button size="sm" variant="secondary" onClick={() => sendRequest(p.id)} loading={busyId === p.id}>
+                        <UserPlus size={14} /> Add
+                      </Button>
+                    )}
+                  </div>
                 </motion.div>
               ))
             )}
@@ -230,17 +304,36 @@ export default function Connect() {
       {/* Incoming requests */}
       {incoming.length > 0 && (
         <GlassCard className="p-5">
-          <h2 className="font-semibold flex items-center gap-2 mb-3"><UserPlus size={18} className="text-amber-500" /> Friend requests <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">{incoming.length}</span></h2>
+          <h2 className="font-semibold flex items-center gap-2 mb-3">
+            <UserPlus size={18} className="text-amber-500" /> Friend requests{' '}
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+              {incoming.length}
+            </span>
+          </h2>
           <div className="space-y-2">
             {incoming.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 p-3 rounded-xl glass">
-                <Avatar p={f.profile} />
+              <div
+                key={f.id}
+                onClick={() => setSelectedProfile(f.profile)}
+                className="flex items-center gap-3 p-3 rounded-2xl glass hover:bg-white/80 dark:hover:bg-white/10 transition cursor-pointer group border border-transparent hover:border-amber-500/30"
+              >
+                <div className="p-[2px] rounded-full group-hover:bg-gradient-to-tr group-hover:from-amber-500 group-hover:via-rose-500 group-hover:to-indigo-500 transition">
+                  <Avatar p={f.profile} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{f.profile.full_name || 'Student'}</p>
+                  <p className="font-semibold text-sm truncate group-hover:text-amber-400 transition">
+                    {f.profile.full_name || 'Student'}
+                  </p>
                   <p className="text-xs text-indigo-500 truncate">@{f.profile.username}</p>
                 </div>
-                <Button size="sm" onClick={() => acceptRequest(f)} loading={busyId === f.id}><Check size={14} /> Accept</Button>
-                <Button size="sm" variant="ghost" onClick={() => declineRequest(f)} disabled={busyId === f.id}><X size={14} /></Button>
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button size="sm" onClick={() => acceptRequest(f)} loading={busyId === f.id}>
+                    <Check size={14} /> Accept
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => declineRequest(f)} disabled={busyId === f.id}>
+                    <X size={14} />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -249,22 +342,39 @@ export default function Connect() {
 
       {/* Friends list */}
       <GlassCard className="p-5">
-        <h2 className="font-semibold flex items-center gap-2 mb-3"><UserCheck size={18} className="text-emerald-500" /> Your friends <span className="text-xs text-slate-400">({friends.length})</span></h2>
-        {loading ? <Loading /> : friends.length === 0 ? (
-          <EmptyState icon={<Users size={24} />} title="No friends yet" hint="Search for a username above and send a friend request." />
+        <h2 className="font-semibold flex items-center gap-2 mb-3">
+          <UserCheck size={18} className="text-emerald-500" /> Your friends{' '}
+          <span className="text-xs text-slate-400">({friends.length})</span>
+        </h2>
+        {loading ? (
+          <Loading />
+        ) : friends.length === 0 ? (
+          <EmptyState icon={<Users size={24} />} title="No friends yet" hint="Search for a name or username above to connect." />
         ) : (
           <div className="grid sm:grid-cols-2 gap-2">
             {friends.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 p-3 rounded-xl glass">
-                <Avatar p={f.profile} />
+              <div
+                key={f.id}
+                onClick={() => setSelectedProfile(f.profile)}
+                className="flex items-center gap-3 p-3 rounded-2xl glass hover:bg-white/80 dark:hover:bg-white/10 transition cursor-pointer group border border-transparent hover:border-emerald-500/30"
+              >
+                <div className="p-[2px] rounded-full group-hover:bg-gradient-to-tr group-hover:from-amber-500 group-hover:via-rose-500 group-hover:to-indigo-500 transition">
+                  <Avatar p={f.profile} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{f.profile.full_name || 'Student'}</p>
+                  <p className="font-semibold text-sm truncate group-hover:text-emerald-400 transition">
+                    {f.profile.full_name || 'Student'}
+                  </p>
                   <p className="text-xs text-slate-500 dark:text-white/50 truncate">
                     {f.profile.username ? `@${f.profile.username}` : ''}
                     {f.profile.college ? ` · ${f.profile.college}` : ''}
                   </p>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => removeFriend(f)} disabled={busyId === f.id}><X size={14} /></Button>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Button size="sm" variant="ghost" onClick={() => removeFriend(f)} disabled={busyId === f.id} title="Remove friend">
+                    <X size={14} />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -274,21 +384,66 @@ export default function Connect() {
       {/* Outgoing requests */}
       {outgoing.length > 0 && (
         <GlassCard className="p-5">
-          <h2 className="font-semibold flex items-center gap-2 mb-3"><Clock size={18} className="text-slate-400" /> Sent requests</h2>
+          <h2 className="font-semibold flex items-center gap-2 mb-3">
+            <Clock size={18} className="text-slate-400" /> Sent requests
+          </h2>
           <div className="space-y-2">
             {outgoing.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 p-3 rounded-xl glass">
-                <Avatar p={f.profile} />
+              <div
+                key={f.id}
+                onClick={() => setSelectedProfile(f.profile)}
+                className="flex items-center gap-3 p-3 rounded-2xl glass hover:bg-white/80 dark:hover:bg-white/10 transition cursor-pointer group border border-transparent hover:border-slate-500/30"
+              >
+                <div className="p-[2px] rounded-full group-hover:bg-gradient-to-tr group-hover:from-amber-500 group-hover:via-rose-500 group-hover:to-indigo-500 transition">
+                  <Avatar p={f.profile} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{f.profile.full_name || 'Student'}</p>
+                  <p className="font-semibold text-sm truncate group-hover:text-indigo-400 transition">
+                    {f.profile.full_name || 'Student'}
+                  </p>
                   <p className="text-xs text-indigo-500 truncate">@{f.profile.username}</p>
                 </div>
                 <span className="text-xs text-slate-400">Pending</span>
-                <Button size="sm" variant="ghost" onClick={() => cancelRequest(f)} disabled={busyId === f.id}>Cancel</Button>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Button size="sm" variant="ghost" onClick={() => cancelRequest(f)} disabled={busyId === f.id}>
+                    Cancel
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         </GlassCard>
+      )}
+
+      {/* Instagram-style Friend Profile Modal */}
+      {selectedProfile && (
+        <FriendProfileModal
+          profile={selectedProfile}
+          open={Boolean(selectedProfile)}
+          onClose={() => setSelectedProfile(null)}
+          friendship={getFriendshipInfo(selectedProfile.id).friendship}
+          friendshipStatus={getFriendshipInfo(selectedProfile.id).status}
+          onSendRequest={async (targetId) => {
+            await sendRequest(targetId);
+            await load();
+          }}
+          onAcceptRequest={async (f) => {
+            await acceptRequest(f);
+            await load();
+          }}
+          onDeclineRequest={async (f) => {
+            await declineRequest(f);
+            await load();
+          }}
+          onCancelRequest={async (f) => {
+            await cancelRequest(f);
+            await load();
+          }}
+          onRemoveFriend={async (f) => {
+            await removeFriend(f);
+            await load();
+          }}
+        />
       )}
     </div>
   );
