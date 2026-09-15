@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Award, GraduationCap, Mail, Edit2, Trophy, Flame, BookOpen, Clock, AtSign } from 'lucide-react';
+import { User, Award, GraduationCap, Mail, Edit2, Trophy, Flame, BookOpen, Clock, AtSign, X } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
@@ -14,6 +14,7 @@ export default function Profile() {
   const [stats, setStats] = useState({ notes: 0, assignments: 0, friends: 0, groups: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ full_name: '', username: '', college: '', department: '', semester: 1, bio: '', avatar_url: '' });
 
@@ -37,10 +38,11 @@ export default function Profile() {
 
   const save = async () => {
     if (!user) return;
-    if (!form.full_name.trim()) { setError('Full name is required.'); return; }
+    if (!form.full_name.trim()) { setFormError('Full name is required.'); return; }
+    setFormError(null);
     const cleanedUsername = form.username.trim().toLowerCase().replace(/^@/, '').replace(/[^a-z0-9_]/g, '') || null;
     const { error } = await supabase.from('profiles').update({ full_name: form.full_name, username: cleanedUsername, college: form.college, department: form.department, semester: form.semester, bio: form.bio, avatar_url: form.avatar_url || null, updated_at: new Date().toISOString() }).eq('id', user.id);
-    if (error) { setError(error.message); return; }
+    if (error) { setFormError(error.message); return; }
     await refreshProfile();
     setOpen(false);
   };
@@ -57,7 +59,14 @@ export default function Profile() {
         <Button onClick={() => setOpen(true)}><Edit2 size={15} /> Edit profile</Button>
       </div>
 
-      {error && <ErrorState message={error} />}
+      {error && (
+        <div className="flex items-center justify-between p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-300 text-sm">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="p-1 rounded hover:bg-rose-500/20 text-rose-400 hover:text-rose-200">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       <GlassCard className="p-6 relative overflow-hidden">
         <div className="absolute inset-0 gradient-bg opacity-50" />
@@ -112,16 +121,26 @@ export default function Profile() {
         )}
       </GlassCard>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Edit profile">
+      <Modal open={open} onClose={() => { setOpen(false); setFormError(null); }} title="Edit profile">
         <div className="space-y-3">
           <Input placeholder="Avatar URL (optional)" value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} />
-          <Input placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+          <div>
+            <Input
+              placeholder="Full name"
+              value={form.full_name}
+              onChange={(e) => {
+                setForm({ ...form, full_name: e.target.value });
+                if (formError) setFormError(null);
+              }}
+            />
+            {formError && <p className="text-xs text-rose-500 mt-1">{formError}</p>}
+          </div>
           <Input placeholder="Username (e.g. alex_studies)" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           <Input placeholder="College" value={form.college} onChange={(e) => setForm({ ...form, college: e.target.value })} />
           <Input placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
           <Input type="number" min={1} max={12} placeholder="Semester" value={form.semester} onChange={(e) => setForm({ ...form, semester: Number(e.target.value) })} />
           <Textarea placeholder="Bio (optional)" rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
-          <Button onClick={save} className="w-full">Save changes</Button>
+          <Button onClick={save} disabled={!form.full_name.trim()} className="w-full">Save changes</Button>
         </div>
       </Modal>
     </div>

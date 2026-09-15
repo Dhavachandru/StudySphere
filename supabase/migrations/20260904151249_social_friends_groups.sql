@@ -190,16 +190,32 @@ ON study_group_members FOR SELECT
 TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "insert_own_study_group_members" ON study_group_members;
-CREATE POLICY "insert_own_study_group_members"
+DROP POLICY IF EXISTS "insert_study_group_members" ON study_group_members;
+CREATE POLICY "insert_study_group_members"
 ON study_group_members FOR INSERT
 TO authenticated
-WITH CHECK (auth.uid() = user_id);
+WITH CHECK (
+  auth.uid() = user_id
+  OR EXISTS (
+    SELECT 1 FROM study_groups
+    WHERE study_groups.id = study_group_members.group_id
+    AND study_groups.owner_id = auth.uid()
+  )
+);
 
 DROP POLICY IF EXISTS "delete_own_study_group_members" ON study_group_members;
-CREATE POLICY "delete_own_study_group_members"
+DROP POLICY IF EXISTS "delete_study_group_members" ON study_group_members;
+CREATE POLICY "delete_study_group_members"
 ON study_group_members FOR DELETE
 TO authenticated
-USING (auth.uid() = user_id);
+USING (
+  auth.uid() = user_id
+  OR EXISTS (
+    SELECT 1 FROM study_groups
+    WHERE study_groups.id = study_group_members.group_id
+    AND study_groups.owner_id = auth.uid()
+  )
+);
 
 -- 5. Widen profiles SELECT so users can search each other
 DROP POLICY IF EXISTS "select_own_profile" ON profiles;
@@ -229,3 +245,6 @@ CREATE INDEX IF NOT EXISTS friendships_friend_idx ON friendships(friend_id);
 CREATE INDEX IF NOT EXISTS study_groups_owner_idx ON study_groups(owner_id);
 CREATE INDEX IF NOT EXISTS study_group_members_group_idx ON study_group_members(group_id);
 CREATE INDEX IF NOT EXISTS study_group_members_user_idx ON study_group_members(user_id);
+
+-- 7. Refresh PostgREST schema cache
+NOTIFY pgrst, 'reload schema';

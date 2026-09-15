@@ -53,7 +53,7 @@ async function ensureProfile(user: User): Promise<Profile | null> {
       { onConflict: 'user_id' }
     );
 
-  return (profileData as Profile | null) ?? { id: user.id, full_name: fullName, avatar_url: avatarUrl, college: null, department: null, semester: 1, bio: null, achievements: [], statistics: {}, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+  return (profileData as Profile | null) ?? { id: user.id, username: null, full_name: fullName, avatar_url: avatarUrl, college: null, department: null, semester: 1, bio: null, achievements: [], statistics: {}, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

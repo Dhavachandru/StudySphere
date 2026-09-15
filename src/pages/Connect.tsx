@@ -37,7 +37,15 @@ export default function Connect() {
       .from('friendships')
       .select('*')
       .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
-    if (e) { setError(e.message); setLoading(false); return; }
+    if (e) {
+      if (e.message.includes('friendships') || e.code === 'PGRST205') {
+        setError("Database table 'public.friendships' is missing. Please run the migration (supabase/migrations/20260904151249_social_friends_groups.sql) in your Supabase SQL Editor.");
+      } else {
+        setError(e.message);
+      }
+      setLoading(false);
+      return;
+    }
 
     const all = (rows as Friendship[]) ?? [];
     const otherIds = Array.from(new Set(all.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id))));

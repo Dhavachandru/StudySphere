@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Users, Plus, LogOut, Search, Trash2, GraduationCap, UserCheck, Loader2, Sparkles,
+  Users, Plus, LogOut, Search, Trash2, GraduationCap, UserCheck, Loader2, Sparkles, X,
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
@@ -27,7 +27,9 @@ export default function GroupStudy() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [inviteGroup, setInviteGroup] = useState<StudyGroup | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', subject: '', description: '', max_members: 10 });
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState<'all' | 'mine' | 'joined'>('all');
@@ -38,7 +40,15 @@ export default function GroupStudy() {
     setError(null);
 
     const { data: gRows, error: ge } = await supabase.from('study_groups').select('*').order('created_at', { ascending: false });
-    if (ge) { setError(ge.message); setLoading(false); return; }
+    if (ge) {
+      if (ge.message.includes('study_groups') || ge.code === 'PGRST205') {
+        setError("Database table 'public.study_groups' is missing. Please run the migration (supabase/migrations/20260904151249_social_friends_groups.sql) in your Supabase SQL Editor.");
+      } else {
+        setError(ge.message);
+      }
+      setLoading(false);
+      return;
+    }
     const allGroups = (gRows as StudyGroup[]) ?? [];
 
     const { data: mRows } = await supabase.from('study_group_members').select('*');
@@ -90,21 +100,42 @@ export default function GroupStudy() {
 
   useEffect(() => { load(); }, [load]);
 
-  const createGroup = async () => {
+  const createGroup = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!user) return;
-    if (!form.name.trim()) { setError('Group name is required.'); return; }
+    if (!form.name.trim()) {
+      setCreateError('Group name is required.');
+      return;
+    }
     setCreating(true);
-    setError(null);
+    setCreateError(null);
     const { data: gRow, error: gErr } = await supabase
       .from('study_groups')
-      .insert({ name: form.name.trim(), subject: form.subject.trim() || null, description: form.description.trim() || null, max_members: form.max_members, owner_id: user.id })
+      .insert({
+        name: form.name.trim(),
+        subject: form.subject.trim() || null,
+        description: form.description.trim() || null,
+        max_members: form.max_members,
+        owner_id: user.id,
+      })
       .select('*')
       .single();
-    if (gErr) { setError(gErr.message); setCreating(false); return; }
+    if (gErr) {
+      setCreateError(gErr.message);
+      setCreating(false);
+      return;
+    }
     const group = gRow as StudyGroup;
-    const { error: mErr } = await supabase.from('study_group_members').insert({ group_id: group.id, user_id: user.id, role: 'owner' });
-    if (mErr) { setError(mErr.message); setCreating(false); return; }
+    const { error: mErr } = await supabase
+      .from('study_group_members')
+      .insert({ group_id: group.id, user_id: user.id, role: 'owner' });
+    if (mErr) {
+      setCreateError(mErr.message);
+      setCreating(false);
+      return;
+    }
     setForm({ name: '', subject: '', description: '', max_members: 10 });
+    setCreateError(null);
     setCreating(false);
     setCreateOpen(false);
     await load();
@@ -142,11 +173,19 @@ export default function GroupStudy() {
 
   const inviteFriend = async (friendId: string, groupId: string) => {
     setBusyId(friendId);
+    setInviteError(null);
     // Insert a membership row for the friend (they're auto-added as member)
     const { error: ie } = await supabase.from('study_group_members').insert({ group_id: groupId, user_id: friendId, role: 'member' });
     if (ie) {
       // Already a member is fine — ignore
-      if (ie.code !== '23505') { setError(ie.message); setBusyId(null); return; }
+      if (ie.code !== '23505') {
+        setInviteError(ie.message.includes('row-level security')
+          ? 'Permission denied: Please update the database RLS policy to allow inviting members.'
+          : ie.message
+        );
+        setBusyId(null);
+        return;
+      }
     }
     setBusyId(null);
     await load();
@@ -179,7 +218,17 @@ export default function GroupStudy() {
         <Button onClick={() => setCreateOpen(true)}><Plus size={16} /> New group</Button>
       </div>
 
-      {error && <ErrorState message={error} onRetry={load} />}
+      {error && (
+        <div className="flex items-center justify-between p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-300 text-sm">
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="p-1 rounded hover:bg-rose-500/20 text-rose-400 hover:text-rose-200 transition"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-1">
         {(['all', 'mine', 'joined'] as const).map((f) => (
@@ -243,21 +292,85 @@ export default function GroupStudy() {
       )}
 
       {/* Create group modal */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create study group">
-        <div className="space-y-3">
-          <Input placeholder="Group name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input placeholder="Subject (optional)" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
-          <Textarea placeholder="Description (optional)" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-500 dark:text-white/50">Max members</label>
-            <Input type="number" min={2} max={50} value={form.max_members} onChange={(e) => setForm({ ...form, max_members: Number(e.target.value) })} className="w-24" />
+      <Modal
+        open={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+          setCreateError(null);
+        }}
+        title="Create study group"
+      >
+        <form onSubmit={createGroup} className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-slate-400 block mb-1.5">
+              Group Name <span className="text-rose-400">*</span>
+            </label>
+            <Input
+              placeholder="e.g. Algorithms & Data Structures"
+              value={form.name}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (createError) setCreateError(null);
+              }}
+              autoFocus
+            />
+            {createError && (
+              <p className="text-xs text-rose-400 mt-1.5">{createError}</p>
+            )}
           </div>
-          <Button onClick={createGroup} loading={creating} className="w-full"><Sparkles size={15} /> Create group</Button>
-        </div>
+          <div>
+            <label className="text-xs font-medium text-slate-400 block mb-1.5">Subject (optional)</label>
+            <Input
+              placeholder="e.g. Computer Science"
+              value={form.subject}
+              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-400 block mb-1.5">Description (optional)</label>
+            <Textarea
+              placeholder="What is this study group about?"
+              rows={3}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-slate-500 dark:text-white/50">Max members</label>
+            <Input
+              type="number"
+              min={2}
+              max={50}
+              value={form.max_members}
+              onChange={(e) => setForm({ ...form, max_members: Math.max(2, Math.min(50, Number(e.target.value) || 10)) })}
+              className="w-24 text-center"
+            />
+          </div>
+          <Button
+            type="submit"
+            loading={creating}
+            disabled={!form.name.trim() || creating}
+            className="w-full"
+          >
+            <Sparkles size={15} /> Create group
+          </Button>
+        </form>
       </Modal>
 
       {/* Invite friends modal */}
-      <Modal open={!!inviteGroup} onClose={() => setInviteGroup(null)} title={`Invite friends to "${inviteGroup?.name ?? ''}"`}>
+      <Modal
+        open={!!inviteGroup}
+        onClose={() => {
+          setInviteGroup(null);
+          setInviteError(null);
+        }}
+        title={`Invite friends to "${inviteGroup?.name ?? ''}"`}
+      >
+        {inviteError && (
+          <div className="p-3 mb-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+            {inviteError}
+          </div>
+        )}
         {friends.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-white/50 text-center py-6">You need friends to invite. Go to the Connect page to add some!</p>
         ) : (
