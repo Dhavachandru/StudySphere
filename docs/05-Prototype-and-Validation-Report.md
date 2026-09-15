@@ -12,7 +12,7 @@ StudySphere is a functional high-fidelity web prototype that implements the full
 | Planner | Working | 7 tabs: Timetable, Exam Countdown, Attendance, GPA, Semester, Daily Goals, Weekly Goals |
 | Assignments | Working | Add, update status, filter by status, delete, priority levels, due date tracking |
 | AI Assistant | Working | 7 modes (chat, explain, summarize, notes, flashcards, quiz, translate), conversation history, copy, retry, stop |
-| Coding Hub | Working | HTML, CSS, JavaScript live preview in sandboxed iframe; Python via Pyodide WASM; auto-run; copy; sample code |
+| Coding Hub | Working | Java, C++, and Python code editor, compilation & execution with live console output, standard I/O, and diagnostics |
 | Coding Progress | Working | Log sessions, track problems/hours/languages/streaks, 30-day chart, recent sessions list |
 | Analytics | Working | Weekly/monthly views, study vs coding hours chart, productivity chart, summary cards |
 | Exam Schedule | Working | Add exams, countdown cards, mark completed, completed list |

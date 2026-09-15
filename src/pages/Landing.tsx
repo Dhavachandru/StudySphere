@@ -10,7 +10,7 @@ const features = [
   { icon: StickyNote, title: 'Smart Notes', desc: 'Rich-text markdown notes with categories, pinning, favorites and autosave.' },
   { icon: Calendar, title: 'Planner', desc: 'Timetable, exam countdown, semester tracker and GPA calculator.' },
   { icon: Bot, title: 'AI Assistant', desc: 'Chat, summarize, generate notes, flashcards & quizzes with real AI.' },
-  { icon: Code2, title: 'Coding Hub', desc: 'Write & preview HTML, CSS, JavaScript, and Python with live output right in your browser.' },
+  { icon: Code2, title: 'Coding Hub', desc: 'Write, compile, and run Java, C++, and Python with live console output.' },
   { icon: BarChart3, title: 'Analytics', desc: 'Study hours, coding streaks, productivity score, weekly & monthly charts.' },
   { icon: Users, title: 'Connect & Group Study', desc: 'Find friends by username, send requests, and create study groups to learn together.' },
 ];

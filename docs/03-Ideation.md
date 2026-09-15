@@ -74,7 +74,7 @@ StudySphere is a web-based, cloud-backed student workspace with the following ma
 | **Planner** | Tabbed planner: Timetable (weekly grid), Exam Countdown, Attendance (with progress bars), GPA (per semester), Semester tracking, Daily Goals, Weekly Goals |
 | **Assignments** | Assignment tracker with title, subject, due date, priority (low/medium/high), status (pending/in-progress/completed/overdue), filter, and description |
 | **AI Assistant** | Chat interface with 7 modes: Chat, Explain Code, Summarize, Generate Notes, Flashcards, Generate Quiz, Translate. Conversation history saved to cloud. Runs via a Supabase Edge Function with a built-in study assistant (or external AI API if configured). |
-| **Coding Hub** | In-browser code editor with live preview for HTML, CSS, JavaScript (sandboxed iframe) and Python (via Pyodide WASM). Auto-run toggle, copy button, and sample code. |
+| **Coding Hub** | In-browser code editor, compiler & runner for Java, C++, and Python with live console output, standard I/O (stdin), copy button, and sample templates. |
 | **Coding Progress** | Log daily coding sessions (problems solved, hours, languages, notes). Stats cards, 30-day bar chart, recent sessions list, and streak tracking. |
 | **Analytics** | Auto-calculated stats from activity across the app. Weekly/monthly toggle. Study vs coding hours chart, productivity score chart, and summary cards. |
 | **Exam Schedule** | Dedicated exam tracker with countdown cards, completed exam list, and add/edit/delete. |

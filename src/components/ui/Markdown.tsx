@@ -50,7 +50,7 @@ hljs.registerLanguage('rust', rust);
 hljs.registerLanguage('rs', rust);
 
 // Register plain text aliases so hljs won't ever throw on them
-const plainText = () => ({ name: 'plaintext' });
+const plainText = () => ({ name: 'plaintext', contains: [] });
 hljs.registerLanguage('plaintext', plainText);
 hljs.registerLanguage('text', plainText);
 hljs.registerLanguage('txt', plainText);
