@@ -2,12 +2,15 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users, Plus, LogOut, Search, Trash2, GraduationCap, UserCheck, Loader2, Sparkles, X,
+  Trophy, Target, Flame, Award
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
 import { Loading, EmptyState, ErrorState } from '../components/ui/State';
 import { Modal } from '../components/ui/Modal';
+import { GroupStudyRoomModal } from '../components/social/GroupStudyRoomModal';
+import { loadGroupTasks, loadMemberPoints, getLevelInfo } from '../lib/groupGamification';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import type { StudyGroup, StudyGroupMember, Profile, Friendship } from '../lib/types';
@@ -33,6 +36,7 @@ export default function GroupStudy() {
   const [form, setForm] = useState({ name: '', subject: '', description: '', max_members: 10 });
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState<'all' | 'mine' | 'joined'>('all');
+  const [activeStudyGroup, setActiveStudyGroup] = useState<StudyGroup | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -230,6 +234,38 @@ export default function GroupStudy() {
         </div>
       )}
 
+      {/* Gamification Highlights Banner */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900/60 border border-indigo-500/20 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-500 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 shrink-0">
+            <Trophy size={24} />
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              Group Study Quests & Levels
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
+                Gamified
+              </span>
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300">
+              Complete study tasks with your friends, earn XP, level up your scholar rank, and dominate the leaderboard!
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-300">
+          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium">
+            <Target size={14} className="text-indigo-400" /> Complete Quests
+          </div>
+          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium">
+            <Flame size={14} className="text-orange-400" /> Earn Points
+          </div>
+          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium">
+            <Award size={14} className="text-amber-400" /> Level Up Friends
+          </div>
+        </div>
+      </div>
+
       <div className="flex gap-1">
         {(['all', 'mine', 'joined'] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-sm capitalize transition ${filter === f ? 'gradient-brand text-white' : 'glass'}`}>
@@ -249,17 +285,33 @@ export default function GroupStudy() {
         <div className="grid sm:grid-cols-2 gap-4">
           {filtered.map((g, i) => {
             const gms = membersMap[g.id] ?? [];
+            const groupTasks = loadGroupTasks(g.id, g.subject);
+            const groupPointsMap = loadMemberPoints(g.id);
+            const groupTotalXp = Object.values(groupPointsMap).reduce((s, p) => s + p, 0);
+            const groupLevel = getLevelInfo(groupTotalXp);
+            const completedCount = groupTasks.filter((t) => t.completed).length;
+
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                <GlassCard className="p-5 h-full flex flex-col">
+                <GlassCard className="p-5 h-full flex flex-col hover:border-indigo-500/30 transition">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0">
-                      <h3 className="font-semibold truncate">{g.name}</h3>
+                      <h3 className="font-semibold truncate text-base">{g.name}</h3>
                       {g.subject && <p className="text-xs text-indigo-500 flex items-center gap-1 mt-0.5"><GraduationCap size={12} /> {g.subject}</p>}
                     </div>
-                    {g.isOwner && <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 shrink-0">Owner</span>}
+                    {g.isOwner && <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 shrink-0 font-medium">Owner</span>}
                   </div>
                   {g.description && <p className="text-sm text-slate-500 dark:text-white/60 mb-3 line-clamp-2">{g.description}</p>}
+
+                  {/* Gamification Bar */}
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs mb-3">
+                    <span className="flex items-center gap-1.5 text-amber-400 font-bold">
+                      <Flame size={13} className="text-orange-400" /> {groupTotalXp} XP · Lvl {groupLevel.level}
+                    </span>
+                    <span className="text-slate-400 font-medium flex items-center gap-1">
+                      <Target size={12} className="text-indigo-400" /> {completedCount}/{groupTasks.length} Quests Done
+                    </span>
+                  </div>
 
                   <div className="flex items-center gap-2 mb-3">
                     <div className="flex -space-x-2">
@@ -270,7 +322,14 @@ export default function GroupStudy() {
                     <span className="text-xs text-slate-500 dark:text-white/50">{g.memberCount}/{g.max_members} members</span>
                   </div>
 
-                  <div className="mt-auto flex gap-2">
+                  <div className="mt-auto flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                    <Button
+                      size="sm"
+                      onClick={() => setActiveStudyGroup(g)}
+                      className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-95 text-white font-semibold text-xs shadow-md shadow-indigo-500/20"
+                    >
+                      <Trophy size={13} /> Quests & Leaderboard
+                    </Button>
                     {g.isOwner ? (
                       <>
                         <Button size="sm" variant="secondary" onClick={() => setInviteGroup(g)}><UserCheck size={14} /> Invite</Button>
@@ -397,6 +456,19 @@ export default function GroupStudy() {
           </div>
         )}
       </Modal>
+
+      {/* Study Room Gamification & Leaderboard Modal */}
+      {activeStudyGroup && (
+        <GroupStudyRoomModal
+          group={activeStudyGroup}
+          members={membersMap[activeStudyGroup.id] ?? []}
+          open={Boolean(activeStudyGroup)}
+          onClose={() => {
+            setActiveStudyGroup(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
