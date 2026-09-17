@@ -1,12 +1,18 @@
+export type UserRole = 'student' | 'teacher';
+
 export type Profile = {
   id: string;
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  role?: UserRole;
   college: string | null;
   department: string | null;
   semester: number | null;
   bio: string | null;
+  teacher_id?: string | null;
+  designation?: string | null;
+  specialization?: string | null;
   achievements: string[] | null;
   statistics: Record<string, number> | null;
   created_at?: string;
@@ -223,4 +229,66 @@ export type ChatMessage = {
   kind: string;
   metadata: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type TeacherTask = {
+  id: string;
+  teacher_id: string;
+  teacher_name: string;
+  teacher_avatar?: string | null;
+  title: string;
+  subject: string;
+  department: string;
+  description: string;
+  due_date: string;
+  total_points: number;
+  priority: 'low' | 'medium' | 'high';
+  created_at: string;
+  updated_at?: string;
+};
+
+export type TaskSubmission = {
+  id: string;
+  task_id: string;
+  student_id: string;
+  student_name: string;
+  student_email?: string;
+  student_avatar?: string | null;
+  submission_text: string;
+  submission_link?: string;
+  status: 'pending' | 'submitted' | 'graded';
+  grade?: number | string | null;
+  feedback?: string | null;
+  submitted_at: string;
+  graded_at?: string | null;
+};
+
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
+export type ClassAttendanceRecord = {
+  id: string;
+  teacher_id: string;
+  teacher_name: string;
+  student_id: string;
+  student_name: string;
+  student_email?: string;
+  student_avatar?: string | null;
+  subject: string;
+  date: string;
+  status: AttendanceStatus;
+  remarks?: string | null;
+  created_at: string;
+};
+
+export type StudentRosterItem = {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string | null;
+  department: string;
+  semester: number;
+  roll_number?: string;
+  attendance_rate: number;
+  tasks_completed: number;
+  total_tasks: number;
 };

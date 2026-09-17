@@ -4,16 +4,18 @@ import {
   LayoutDashboard, StickyNote, Calendar, ClipboardList,
   Bot, Code2, BarChart3, User, Settings, HelpCircle, LogOut, Menu, X,
   Search, Sun, Moon, Sparkles, CalendarClock, TrendingUp, Bell, Users, GraduationCap,
+  BookOpen, CheckCircle2, UserCheck, ArrowLeftRight,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
+import type { UserRole } from '../lib/types';
 
-const nav = [
+const studentNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/notes', label: 'Notes', icon: StickyNote },
-  { to: '/planner', label: 'Planner', icon: Calendar },
-  { to: '/assignments', label: 'Assignments', icon: ClipboardList },
+  { to: '/assignments', label: 'Coursework & Tasks', icon: ClipboardList },
+  { to: '/planner', label: 'Planner & Attendance', icon: Calendar },
+  { to: '/notes', label: 'Smart Notes', icon: StickyNote },
   { to: '/exams', label: 'Exam Schedule', icon: CalendarClock },
   { to: '/coding-progress', label: 'Coding Progress', icon: TrendingUp },
   { to: '/notifications', label: 'Notifications', icon: Bell },
@@ -27,29 +29,61 @@ const nav = [
   { to: '/help', label: 'Help Center', icon: HelpCircle },
 ];
 
+const teacherNav = [
+  { to: '/teacher/dashboard', label: 'Faculty Dashboard', icon: LayoutDashboard },
+  { to: '/teacher/attendance', label: 'Class Attendance', icon: CheckCircle2 },
+  { to: '/teacher/assignments', label: 'Assign Coursework', icon: ClipboardList },
+  { to: '/teacher/students', label: 'Student Directory', icon: Users },
+  { to: '/notes', label: 'Faculty Notes', icon: StickyNote },
+  { to: '/ai', label: 'AI Teaching Assistant', icon: Bot },
+  { to: '/coding', label: 'Coding Sandbox', icon: Code2 },
+  { to: '/profile', label: 'Profile', icon: User },
+  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/help', label: 'Help Center', icon: HelpCircle },
+];
+
 export function Layout() {
-  const { profile, signOut } = useAuth();
+  const { profile, role, updateRole, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const initials = (profile?.full_name || 'S').slice(0, 1).toUpperCase();
+  const initials = (profile?.full_name || (role === 'teacher' ? 'F' : 'S')).slice(0, 1).toUpperCase();
+  const navItems = role === 'teacher' ? teacherNav : studentNav;
+
+  const toggleRole = async () => {
+    const nextRole: UserRole = role === 'teacher' ? 'student' : 'teacher';
+    await updateRole(nextRole);
+    if (nextRole === 'teacher') {
+      navigate('/teacher/dashboard');
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   const SidebarContent = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="w-9 h-9 rounded-xl gradient-brand flex items-center justify-center shadow-lg shadow-indigo-500/30">
-          <Sparkles size={18} className="text-white" />
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg ${
+            role === 'teacher'
+              ? 'bg-gradient-to-br from-emerald-600 to-teal-600 shadow-emerald-500/30'
+              : 'gradient-brand shadow-indigo-500/30'
+          }`}
+        >
+          {role === 'teacher' ? <GraduationCap size={18} className="text-white" /> : <Sparkles size={18} className="text-white" />}
         </div>
         <div>
           <p className="font-semibold leading-tight">StudySphere</p>
-          <p className="text-[11px] text-slate-500 dark:text-white/40">Student Browser</p>
+          <p className="text-[11px] text-slate-500 dark:text-white/40">
+            {role === 'teacher' ? 'Faculty Portal' : 'Student Browser'}
+          </p>
         </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 space-y-1">
-        {nav.map(({ to, label, icon: Icon }) => (
+        {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -57,7 +91,9 @@ export function Layout() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                 isActive
-                  ? 'gradient-brand text-white shadow-lg shadow-indigo-500/25'
+                  ? role === 'teacher'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25 font-semibold'
+                    : 'gradient-brand text-white shadow-lg shadow-indigo-500/25 font-semibold'
                   : 'text-slate-600 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10'
               }`
             }
@@ -68,7 +104,22 @@ export function Layout() {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-white/10">
+      {/* Role Switcher in Sidebar Footer */}
+      <div className="p-3 border-t border-white/10 space-y-2">
+        <button
+          onClick={toggleRole}
+          className="flex items-center justify-between px-3 py-2 rounded-xl text-xs w-full glass hover:bg-white/10 transition border border-white/10 text-slate-600 dark:text-white/70"
+          title="Switch view to test different user roles"
+        >
+          <span className="flex items-center gap-2">
+            <ArrowLeftRight size={14} className="text-indigo-400" />
+            Switch to {role === 'teacher' ? 'Student View' : 'Teacher View'}
+          </span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/20 text-slate-300">
+            Toggle
+          </span>
+        </button>
+
         <button
           onClick={async () => {
             await signOut();
@@ -121,7 +172,7 @@ export function Layout() {
             <div className="flex-1 max-w-md hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl glass">
               <Search size={16} className="text-slate-400" />
               <input
-                placeholder="Search students, friends or notes…"
+                placeholder={role === 'teacher' ? 'Search students, classes or submissions...' : 'Search students, friends or notes…'}
                 className="bg-transparent text-sm outline-none w-full placeholder-slate-400"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -134,13 +185,38 @@ export function Layout() {
 
             <div className="flex-1 sm:hidden" />
 
+            {/* Role Indicator Badge */}
+            {role === 'teacher' ? (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <GraduationCap size={13} /> Faculty Mode
+              </span>
+            ) : (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <BookOpen size={13} /> Student Mode
+              </span>
+            )}
+
+            {/* Quick Role Switcher Button */}
+            <button
+              onClick={toggleRole}
+              className="px-2.5 py-1.5 rounded-xl glass border border-white/10 text-xs font-medium hover:bg-white/10 transition hidden md:flex items-center gap-1.5"
+              title="Switch role mode"
+            >
+              <ArrowLeftRight size={13} className="text-indigo-400" />
+              <span>{role === 'teacher' ? 'Student View' : 'Faculty View'}</span>
+            </button>
+
             <button onClick={toggle} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition" title="Toggle theme">
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
             <button
               onClick={() => navigate('/profile')}
-              className="w-9 h-9 rounded-full gradient-brand text-white flex items-center justify-center font-medium text-sm shadow-lg shadow-indigo-500/25"
+              className={`w-9 h-9 rounded-full text-white flex items-center justify-center font-medium text-sm shadow-lg ${
+                role === 'teacher'
+                  ? 'bg-gradient-to-br from-emerald-600 to-teal-600 shadow-emerald-500/25'
+                  : 'gradient-brand shadow-indigo-500/25'
+              }`}
             >
               {initials}
             </button>

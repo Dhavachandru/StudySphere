@@ -27,6 +27,12 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const Connect = lazy(() => import('./pages/Connect'));
 const GroupStudy = lazy(() => import('./pages/GroupStudy'));
 
+// Teacher Module Pages
+const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
+const TeacherAttendance = lazy(() => import('./pages/teacher/TeacherAttendance'));
+const TeacherAssignments = lazy(() => import('./pages/teacher/TeacherAssignments'));
+const TeacherStudents = lazy(() => import('./pages/teacher/TeacherStudents'));
+
 function Protected({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
   const location = useLocation();
@@ -36,9 +42,11 @@ function Protected({ children }: { children: ReactNode }) {
 }
 
 function PublicOnly({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, role } = useAuth();
   if (loading) return <Loading />;
-  if (session) return <Navigate to="/dashboard" replace />;
+  if (session) {
+    return <Navigate to={role === 'teacher' ? '/teacher/dashboard' : '/dashboard'} replace />;
+  }
   return <>{children}</>;
 }
 
@@ -50,16 +58,26 @@ function Lazy({ children }: { children: ReactNode }) {
   );
 }
 
+function RoleDashboard() {
+  const { role } = useAuth();
+  if (role === 'teacher') {
+    return <Lazy><TeacherDashboard /></Lazy>;
+  }
+  return <Lazy><Dashboard /></Lazy>;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
+      <Route path="/teacher/login" element={<PublicOnly><Login defaultRole="teacher" /></PublicOnly>} />
       <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
       <Route path="/forgot" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
 
       <Route element={<Protected><Layout /></Protected>}>
-        <Route path="/dashboard" element={<Lazy><Dashboard /></Lazy>} />
+        {/* Core & Student Routes */}
+        <Route path="/dashboard" element={<RoleDashboard />} />
         <Route path="/notes" element={<Lazy><Notes /></Lazy>} />
         <Route path="/planner" element={<Lazy><Planner /></Lazy>} />
         <Route path="/assignments" element={<Lazy><Assignments /></Lazy>} />
@@ -74,6 +92,12 @@ function AppRoutes() {
         <Route path="/notifications" element={<Lazy><Notifications /></Lazy>} />
         <Route path="/connect" element={<Lazy><Connect /></Lazy>} />
         <Route path="/group-study" element={<Lazy><GroupStudy /></Lazy>} />
+
+        {/* Teacher Module Routes */}
+        <Route path="/teacher/dashboard" element={<Lazy><TeacherDashboard /></Lazy>} />
+        <Route path="/teacher/attendance" element={<Lazy><TeacherAttendance /></Lazy>} />
+        <Route path="/teacher/assignments" element={<Lazy><TeacherAssignments /></Lazy>} />
+        <Route path="/teacher/students" element={<Lazy><TeacherStudents /></Lazy>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

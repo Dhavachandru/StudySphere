@@ -1,33 +1,54 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
-import type { Profile } from './types';
+import type { Profile, UserRole } from './types';
+
+type SignUpExtra = {
+  department?: string;
+  designation?: string;
+  college?: string;
+  teacher_id?: string;
+  semester?: number;
+};
 
 type AuthState = {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
+  role: UserRole;
   loading: boolean;
   signIn: (email: string, password: string, remember: boolean) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string, role?: UserRole, extra?: SignUpExtra) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateRole: (role: UserRole) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-  return (data as Profile | null) ?? null;
+  try {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    return (data as Profile | null) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // Create a profile + settings row for a newly registered user.
 // Uses upsert so it's idempotent if the OAuth callback fires twice.
-async function ensureProfile(user: User): Promise<Profile | null> {
+async function ensureProfile(user: User, initialRole?: UserRole, extra?: SignUpExtra): Promise<Profile | null> {
   const existing = await fetchProfile(user.id);
-  if (existing) return existing;
+  const metadataRole = (user.user_metadata?.role as UserRole | undefined) ?? initialRole;
+
+  if (existing) {
+    if (metadataRole && !existing.role) {
+      existing.role = metadataRole;
+    }
+    return existing;
+  }
 
   const fullName =
     (user.user_metadata?.full_name as string | undefined) ??
@@ -36,24 +57,78 @@ async function ensureProfile(user: User): Promise<Profile | null> {
     'Student';
   const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ??
     (user.user_metadata?.picture as string | undefined) ?? null;
+  const role: UserRole = metadataRole || 'student';
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .upsert(
-      { id: user.id, full_name: fullName, avatar_url: avatarUrl },
-      { onConflict: 'id' }
-    )
-    .select('*')
-    .maybeSingle();
+  // Try upserting with role; if PostgREST schema doesn't have role yet, fall back without it
+  let profileData: Profile | null = null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(
+        {
+          id: user.id,
+          full_name: fullName,
+          avatar_url: avatarUrl,
+          role,
+          department: extra?.department ?? (user.user_metadata?.department as string) ?? null,
+          college: extra?.college ?? (user.user_metadata?.college as string) ?? null,
+          designation: extra?.designation ?? (user.user_metadata?.designation as string) ?? null,
+        },
+        { onConflict: 'id' }
+      )
+      .select('*')
+      .maybeSingle();
 
-  await supabase
-    .from('settings')
-    .upsert(
-      { user_id: user.id, account_email: user.email, theme: 'dark' },
-      { onConflict: 'user_id' }
-    );
+    if (!error && data) {
+      profileData = data as Profile;
+    }
+  } catch {
+    // If role column is missing, try legacy payload
+  }
 
-  return (profileData as Profile | null) ?? { id: user.id, username: null, full_name: fullName, avatar_url: avatarUrl, college: null, department: null, semester: 1, bio: null, achievements: [], statistics: {}, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+  if (!profileData) {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .upsert(
+          { id: user.id, full_name: fullName, avatar_url: avatarUrl },
+          { onConflict: 'id' }
+        )
+        .select('*')
+        .maybeSingle();
+      if (data) profileData = { ...(data as Profile), role };
+    } catch {
+      // fallback
+    }
+  }
+
+  try {
+    await supabase
+      .from('settings')
+      .upsert(
+        { user_id: user.id, account_email: user.email, theme: 'dark' },
+        { onConflict: 'user_id' }
+      );
+  } catch {
+    // ignore
+  }
+
+  return profileData ?? {
+    id: user.id,
+    username: null,
+    full_name: fullName,
+    avatar_url: avatarUrl,
+    role,
+    college: extra?.college ?? null,
+    department: extra?.department ?? null,
+    designation: extra?.designation ?? null,
+    semester: extra?.semester ?? 1,
+    bio: null,
+    achievements: [],
+    statistics: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -120,15 +195,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const [roleOverride, setRoleOverride] = useState<UserRole | null>(() => {
+    try {
+      return (localStorage.getItem('studysphere_active_role') as UserRole) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const activeRole: UserRole =
+    roleOverride ||
+    (profile?.role as UserRole) ||
+    (session?.user?.user_metadata?.role as UserRole) ||
+    'student';
+
+  const updateRole = async (newRole: UserRole) => {
+    setRoleOverride(newRole);
+    try {
+      localStorage.setItem('studysphere_active_role', newRole);
+    } catch {
+      // ignore
+    }
+    if (profile) {
+      setProfile({ ...profile, role: newRole });
+    }
+    if (session?.user) {
+      try {
+        await supabase.auth.updateUser({ data: { role: newRole } });
+      } catch {
+        // ignore
+      }
+      try {
+        await supabase.from('profiles').update({ role: newRole }).eq('id', session.user.id);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    userRole: UserRole = 'student',
+    extra?: SignUpExtra
+  ) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: {
+          full_name: fullName,
+          role: userRole,
+          department: extra?.department,
+          designation: extra?.designation,
+          college: extra?.college,
+        },
+      },
     });
     if (error) return { error: error.message };
     if (data.user) {
-      await ensureProfile(data.user);
+      const p = await ensureProfile(data.user, userRole, extra);
+      setProfile(p);
+      setRoleOverride(userRole);
+      try {
+        localStorage.setItem('studysphere_active_role', userRole);
+      } catch {
+        // ignore
+      }
     }
     return { error: null };
   };
@@ -152,11 +286,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setSession(null);
+    setRoleOverride(null);
+    try {
+      localStorage.removeItem('studysphere_active_role');
+    } catch {
+      // ignore
+    }
   };
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signInWithGoogle, resetPassword, signOut, refreshProfile }}
+      value={{
+        session,
+        user: session?.user ?? null,
+        profile,
+        role: activeRole,
+        loading,
+        signIn,
+        signUp,
+        signInWithGoogle,
+        resetPassword,
+        signOut,
+        refreshProfile,
+        updateRole,
+      }}
     >
       {children}
     </AuthContext.Provider>

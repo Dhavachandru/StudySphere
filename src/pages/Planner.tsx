@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Plus, Trash2, BookOpen, GraduationCap, Award, Clock, Target, CheckCircle, Circle } from 'lucide-react';
+import { Calendar, Plus, Trash2, BookOpen, GraduationCap, Award, Clock, Target, CheckCircle, Circle, ShieldCheck } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -8,16 +8,18 @@ import { Loading, EmptyState, ErrorState } from '../components/ui/State';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import type { PlannerEntry, StudyGoal } from '../lib/types';
+import { attendanceService } from '../lib/attendanceService';
+import type { PlannerEntry, StudyGoal, ClassAttendanceRecord } from '../lib/types';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 type TabId = 'timetable' | 'exams' | 'attendance' | 'gpa' | 'semester' | 'goals-daily' | 'goals-weekly';
 
 export default function Planner() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [entries, setEntries] = useState<PlannerEntry[]>([]);
   const [goals, setGoals] = useState<StudyGoal[]>([]);
+  const [facultyAttendance, setFacultyAttendance] = useState<ClassAttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>('timetable');
@@ -29,14 +31,16 @@ export default function Planner() {
     setLoading(true);
     setError(null);
     try {
-      const [p, g] = await Promise.all([
+      const [p, g, fac] = await Promise.all([
         supabase.from('planner').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
         supabase.from('study_goals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        attendanceService.getStudentAttendanceHistory(user.id, profile?.full_name ?? undefined),
       ]);
       if (p.error) setError(p.error.message);
       if (g.error) setError(g.error.message);
       setEntries((p.data as PlannerEntry[]) ?? []);
       setGoals((g.data as StudyGoal[]) ?? []);
+      setFacultyAttendance(fac);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load planner');
     } finally {
@@ -173,24 +177,112 @@ export default function Planner() {
           )}
 
           {tab === 'attendance' && (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filtered.length === 0 ? <EmptyState icon={<BookOpen size={24} />} title="No attendance tracked" /> : filtered.map((e) => {
-                const pct = e.attendance_total > 0 ? Math.round((e.attendance_present / e.attendance_total) * 100) : 0;
-                return (
-                  <GlassCard key={e.id} className="p-4 group">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold">{e.title || e.subject}</p>
-                      <button onClick={() => remove(e.id)} className="opacity-0 group-hover:opacity-100 text-rose-500"><Trash2 size={14} /></button>
-                    </div>
-                    <div className="mt-3">
-                      <div className="flex justify-between text-xs mb-1"><span>{e.attendance_present}/{e.attendance_total}</span><span className={pct >= 75 ? 'text-emerald-500' : 'text-rose-500'}>{pct}%</span></div>
-                      <div className="h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
-                        <motion.div className="h-full gradient-brand" initial={{ width: 0 }} animate={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
+            <div className="space-y-6">
+              {/* Faculty Attendance Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold flex items-center gap-2">
+                      <GraduationCap size={17} className="text-emerald-500" /> Official Faculty-Marked Attendance
+                    </h3>
+                    <p className="text-xs text-slate-400">Recorded directly by your course instructors</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    {facultyAttendance.length} Sessions Logged
+                  </span>
+                </div>
+
+                {facultyAttendance.length === 0 ? (
+                  <GlassCard className="p-5 text-center text-xs text-slate-400">
+                    No faculty attendance entries recorded yet for your account. Once instructors take attendance in class, your presence and remarks will appear here.
                   </GlassCard>
-                );
-              })}
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {facultyAttendance.map((rec) => (
+                      <GlassCard key={rec.id} className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-bold text-sm">{rec.subject}</p>
+                            <p className="text-[11px] text-slate-400">{new Date(rec.date).toLocaleDateString()}</p>
+                          </div>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              rec.status === 'present'
+                                ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                                : rec.status === 'absent'
+                                ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
+                                : rec.status === 'late'
+                                ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                                : 'bg-sky-500/15 text-sky-500 border border-sky-500/30'
+                            }`}
+                          >
+                            {rec.status}
+                          </span>
+                        </div>
+                        {rec.remarks && (
+                          <p className="text-xs text-slate-300 bg-white/5 p-2 rounded-lg italic">
+                            "{rec.remarks}"
+                          </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 pt-1 border-t border-white/10">
+                          Instructor: {rec.teacher_name}
+                        </p>
+                      </GlassCard>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Personal Self-Tracked Attendance */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold flex items-center gap-2">
+                      <BookOpen size={16} className="text-indigo-500" /> Personal Course Attendance Tracker
+                    </h3>
+                    <p className="text-xs text-slate-400">Manual estimates & goal tracking</p>
+                  </div>
+                  <Button onClick={() => setOpen(true)} size="sm">
+                    <Plus size={14} /> Add Target
+                  </Button>
+                </div>
+
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filtered.length === 0 ? (
+                    <div className="col-span-full">
+                      <EmptyState
+                        icon={<BookOpen size={24} />}
+                        title="No manual attendance goals tracked"
+                        hint="Add a subject target to track your attendance percentage manually."
+                        action={<Button onClick={() => setOpen(true)} size="sm"><Plus size={14} /> Add Subject</Button>}
+                      />
+                    </div>
+                  ) : (
+                    filtered.map((e) => {
+                      const pct = e.attendance_total > 0 ? Math.round((e.attendance_present / e.attendance_total) * 100) : 0;
+                      return (
+                        <GlassCard key={e.id} className="p-4 group">
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold">{e.title || e.subject}</p>
+                            <button onClick={() => remove(e.id)} className="opacity-0 group-hover:opacity-100 text-rose-500 p-1">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div className="mt-3">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span>{e.attendance_present}/{e.attendance_total} classes</span>
+                              <span className={pct >= 75 ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>{pct}%</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                              <motion.div className="h-full gradient-brand" initial={{ width: 0 }} animate={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        </GlassCard>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

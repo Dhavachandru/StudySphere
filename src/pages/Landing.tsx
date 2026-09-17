@@ -2,21 +2,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Sparkles, StickyNote, Calendar, Bot, Code2, BarChart3, ArrowRight,
-  Shield, Zap, Cloud, Layers, Users,
+  Shield, Zap, Cloud, Layers, Users, GraduationCap, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 const features = [
+  { icon: GraduationCap, title: 'Teacher & Faculty Portal', desc: 'Teachers conduct daily class attendance, assign coursework, and grade student submissions.' },
   { icon: StickyNote, title: 'Smart Notes', desc: 'Rich-text markdown notes with categories, pinning, favorites and autosave.' },
-  { icon: Calendar, title: 'Planner', desc: 'Timetable, exam countdown, semester tracker and GPA calculator.' },
+  { icon: Calendar, title: 'Planner & Attendance', desc: 'Official teacher-recorded attendance, timetable, exam countdown, and GPA tracker.' },
   { icon: Bot, title: 'AI Assistant', desc: 'Chat, summarize, generate notes, flashcards & quizzes with real AI.' },
   { icon: Code2, title: 'Coding Hub', desc: 'Write, compile, and run Java, C++, and Python with live console output.' },
-  { icon: BarChart3, title: 'Analytics', desc: 'Study hours, coding streaks, productivity score, weekly & monthly charts.' },
-  { icon: Users, title: 'Connect & Group Study', desc: 'Find friends by username, send requests, and create study groups to learn together.' },
+  { icon: Users, title: 'Connect & Group Study', desc: 'Find classmates, collaborate on coursework, and study together.' },
 ];
 
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -31,11 +31,20 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2">
             {user ? (
-              <button onClick={() => navigate('/dashboard')} className="px-4 py-2 rounded-xl gradient-brand text-white text-sm font-medium shadow-lg shadow-indigo-500/25">
-                Open app
+              <button
+                onClick={() => navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard')}
+                className="px-4 py-2 rounded-xl gradient-brand text-white text-sm font-medium shadow-lg shadow-indigo-500/25"
+              >
+                Open {role === 'teacher' ? 'Faculty Portal' : 'Student App'}
               </button>
             ) : (
               <>
+                <Link
+                  to="/teacher/login"
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold glass text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition flex items-center gap-1.5 border border-emerald-500/20"
+                >
+                  <GraduationCap size={14} /> Faculty Portal
+                </Link>
                 <Link to="/login" className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-black/5 dark:hover:bg-white/10 transition">
                   Log in
                 </Link>

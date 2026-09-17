@@ -8,7 +8,8 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Loading } from '../components/ui/State';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import type { Assignment, AnalyticsRow, PlannerEntry, CodingProgressRow, ExamScheduleEntry, StudyGoal, Notification } from '../lib/types';
+import { teacherService } from '../lib/teacherService';
+import type { Assignment, AnalyticsRow, PlannerEntry, CodingProgressRow, ExamScheduleEntry, StudyGoal, Notification, TeacherTask } from '../lib/types';
 
 function useClock() {
   const [now, setNow] = useState(new Date());
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const { profile, user } = useAuth();
   const now = useClock();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [teacherTasks, setTeacherTasks] = useState<TeacherTask[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsRow[]>([]);
   const [planner, setPlanner] = useState<PlannerEntry[]>([]);
   const [coding, setCoding] = useState<CodingProgressRow[]>([]);
@@ -42,7 +44,7 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       if (!user) return;
-      const [a, an, p, cod, exm, gls, notif] = await Promise.all([
+      const [a, an, p, cod, exm, gls, notif, tTasks] = await Promise.all([
         supabase.from('assignments').select('*').eq('user_id', user.id).order('due_date', { ascending: true }).limit(5),
         supabase.from('analytics').select('*').eq('user_id', user.id).order('day', { ascending: false }).limit(30),
         supabase.from('planner').select('*').eq('user_id', user.id).eq('entry_type', 'timetable'),
@@ -50,6 +52,7 @@ export default function Dashboard() {
         supabase.from('exam_schedule').select('*').eq('user_id', user.id).order('exam_date', { ascending: true }),
         supabase.from('study_goals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
         supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+        teacherService.getAllTasks(),
       ]);
       setAssignments((a.data as Assignment[]) ?? []);
       setAnalytics((an.data as AnalyticsRow[]) ?? []);
@@ -58,6 +61,7 @@ export default function Dashboard() {
       setExams((exm.data as ExamScheduleEntry[]) ?? []);
       setGoals((gls.data as StudyGoal[]) ?? []);
       setNotifications((notif.data as Notification[]) ?? []);
+      setTeacherTasks(tTasks.slice(0, 3));
       setLoading(false);
     })();
   }, [user]);
@@ -221,29 +225,50 @@ export default function Dashboard() {
 
         <GlassCard className="p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold flex items-center gap-2"><ClipboardList size={18} className="text-rose-500" /> Deadlines</h2>
+            <h2 className="font-semibold flex items-center gap-2"><ClipboardList size={18} className="text-rose-500" /> Deadlines & Tasks</h2>
             <Link to="/assignments" className="text-xs text-indigo-500 hover:underline">View all</Link>
           </div>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-white/50 py-6 text-center">No upcoming deadlines.</p>
-          ) : (
-            <div className="space-y-2">
-              {upcoming.map((a) => {
-                const days = a.due_date ? Math.ceil((new Date(a.due_date).getTime() - now.getTime()) / 86400000) : 0;
-                return (
-                  <div key={a.id} className="p-3 rounded-xl glass">
-                    <p className="font-medium text-sm">{a.title}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-slate-500 dark:text-white/50">{a.subject}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${days <= 2 ? 'bg-rose-500/15 text-rose-500' : 'bg-indigo-500/15 text-indigo-500'}`}>
-                        {days <= 0 ? 'Due today' : `${days}d left`}
-                      </span>
-                    </div>
+
+          <div className="space-y-2">
+            {/* Faculty Assigned Tasks Highlight */}
+            {teacherTasks.slice(0, 2).map((t) => (
+              <div key={t.id} className="p-3 rounded-xl glass border border-indigo-500/20">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500">
+                    Faculty: {t.teacher_name}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {t.total_points} pts
+                  </span>
+                </div>
+                <p className="font-medium text-sm truncate">{t.title}</p>
+                <div className="flex items-center justify-between mt-1 text-xs text-slate-400">
+                  <span>{t.subject}</span>
+                  <span className="text-indigo-400 font-medium">Due {new Date(t.due_date).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* Personal Deadlines */}
+            {upcoming.slice(0, 2).map((a) => {
+              const days = a.due_date ? Math.ceil((new Date(a.due_date).getTime() - now.getTime()) / 86400000) : 0;
+              return (
+                <div key={a.id} className="p-3 rounded-xl glass">
+                  <p className="font-medium text-sm truncate">{a.title}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-slate-500 dark:text-white/50">{a.subject}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${days <= 2 ? 'bg-rose-500/15 text-rose-500' : 'bg-indigo-500/15 text-indigo-500'}`}>
+                      {days <= 0 ? 'Due today' : `${days}d left`}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })}
+
+            {teacherTasks.length === 0 && upcoming.length === 0 && (
+              <p className="text-sm text-slate-500 dark:text-white/50 py-6 text-center">No upcoming deadlines.</p>
+            )}
+          </div>
         </GlassCard>
       </div>
 
