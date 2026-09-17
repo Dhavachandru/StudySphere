@@ -8,7 +8,7 @@ import { useAuth } from '../../lib/auth';
 import type { UserRole } from '../../lib/types';
 
 export default function Signup() {
-  const { signUp, signInWithGoogle, updateRole } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -60,7 +60,6 @@ export default function Signup() {
     if (signUpError) {
       setError(signUpError);
     } else {
-      await updateRole(role);
       if (role === 'teacher') {
         navigate('/teacher/dashboard');
       } else {

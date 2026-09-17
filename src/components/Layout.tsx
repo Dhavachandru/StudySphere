@@ -4,7 +4,7 @@ import {
   LayoutDashboard, StickyNote, Calendar, ClipboardList,
   Bot, Code2, BarChart3, User, Settings, HelpCircle, LogOut, Menu, X,
   Search, Sun, Moon, Sparkles, CalendarClock, TrendingUp, Bell, Users, GraduationCap,
-  BookOpen, CheckCircle2, UserCheck, ArrowLeftRight,
+  BookOpen, CheckCircle2,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
@@ -43,7 +43,7 @@ const teacherNav = [
 ];
 
 export function Layout() {
-  const { profile, role, updateRole, signOut } = useAuth();
+  const { profile, role, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -51,16 +51,6 @@ export function Layout() {
 
   const initials = (profile?.full_name || (role === 'teacher' ? 'F' : 'S')).slice(0, 1).toUpperCase();
   const navItems = role === 'teacher' ? teacherNav : studentNav;
-
-  const toggleRole = async () => {
-    const nextRole: UserRole = role === 'teacher' ? 'student' : 'teacher';
-    await updateRole(nextRole);
-    if (nextRole === 'teacher') {
-      navigate('/teacher/dashboard');
-    } else {
-      navigate('/dashboard');
-    }
-  };
 
   const SidebarContent = (
     <div className="flex h-full flex-col">
@@ -104,22 +94,7 @@ export function Layout() {
         ))}
       </nav>
 
-      {/* Role Switcher in Sidebar Footer */}
-      <div className="p-3 border-t border-white/10 space-y-2">
-        <button
-          onClick={toggleRole}
-          className="flex items-center justify-between px-3 py-2 rounded-xl text-xs w-full glass hover:bg-white/10 transition border border-white/10 text-slate-600 dark:text-white/70"
-          title="Switch view to test different user roles"
-        >
-          <span className="flex items-center gap-2">
-            <ArrowLeftRight size={14} className="text-indigo-400" />
-            Switch to {role === 'teacher' ? 'Student View' : 'Teacher View'}
-          </span>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/20 text-slate-300">
-            Toggle
-          </span>
-        </button>
-
+      <div className="p-3 border-t border-white/10">
         <button
           onClick={async () => {
             await signOut();
@@ -195,16 +170,6 @@ export function Layout() {
                 <BookOpen size={13} /> Student Mode
               </span>
             )}
-
-            {/* Quick Role Switcher Button */}
-            <button
-              onClick={toggleRole}
-              className="px-2.5 py-1.5 rounded-xl glass border border-white/10 text-xs font-medium hover:bg-white/10 transition hidden md:flex items-center gap-1.5"
-              title="Switch role mode"
-            >
-              <ArrowLeftRight size={13} className="text-indigo-400" />
-              <span>{role === 'teacher' ? 'Student View' : 'Faculty View'}</span>
-            </button>
 
             <button onClick={toggle} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition" title="Toggle theme">
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}

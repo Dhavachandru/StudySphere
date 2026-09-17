@@ -41,6 +41,24 @@ function Protected({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function TeacherOnly({ children }: { children: ReactNode }) {
+  const { role, loading } = useAuth();
+  if (loading) return <Loading label="Verifying faculty access…" />;
+  if (role !== 'teacher') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
+function StudentOnly({ children }: { children: ReactNode }) {
+  const { role, loading } = useAuth();
+  if (loading) return <Loading label="Verifying student access…" />;
+  if (role !== 'student') {
+    return <Navigate to="/teacher/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
 function PublicOnly({ children }: { children: ReactNode }) {
   const { session, loading, role } = useAuth();
   if (loading) return <Loading />;
@@ -58,14 +76,6 @@ function Lazy({ children }: { children: ReactNode }) {
   );
 }
 
-function RoleDashboard() {
-  const { role } = useAuth();
-  if (role === 'teacher') {
-    return <Lazy><TeacherDashboard /></Lazy>;
-  }
-  return <Lazy><Dashboard /></Lazy>;
-}
-
 function AppRoutes() {
   return (
     <Routes>
@@ -76,28 +86,30 @@ function AppRoutes() {
       <Route path="/forgot" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
 
       <Route element={<Protected><Layout /></Protected>}>
-        {/* Core & Student Routes */}
-        <Route path="/dashboard" element={<RoleDashboard />} />
+        {/* Student-Only Portal Routes */}
+        <Route path="/dashboard" element={<StudentOnly><Lazy><Dashboard /></Lazy></StudentOnly>} />
+        <Route path="/planner" element={<StudentOnly><Lazy><Planner /></Lazy></StudentOnly>} />
+        <Route path="/assignments" element={<StudentOnly><Lazy><Assignments /></Lazy></StudentOnly>} />
+        <Route path="/exams" element={<StudentOnly><Lazy><ExamSchedule /></Lazy></StudentOnly>} />
+        <Route path="/coding-progress" element={<StudentOnly><Lazy><CodingProgress /></Lazy></StudentOnly>} />
+        <Route path="/connect" element={<StudentOnly><Lazy><Connect /></Lazy></StudentOnly>} />
+        <Route path="/group-study" element={<StudentOnly><Lazy><GroupStudy /></Lazy></StudentOnly>} />
+        <Route path="/analytics" element={<StudentOnly><Lazy><Analytics /></Lazy></StudentOnly>} />
+
+        {/* Teacher-Only Portal Routes */}
+        <Route path="/teacher/dashboard" element={<TeacherOnly><Lazy><TeacherDashboard /></Lazy></TeacherOnly>} />
+        <Route path="/teacher/attendance" element={<TeacherOnly><Lazy><TeacherAttendance /></Lazy></TeacherOnly>} />
+        <Route path="/teacher/assignments" element={<TeacherOnly><Lazy><TeacherAssignments /></Lazy></TeacherOnly>} />
+        <Route path="/teacher/students" element={<TeacherOnly><Lazy><TeacherStudents /></Lazy></TeacherOnly>} />
+
+        {/* Shared Academic Utilities */}
         <Route path="/notes" element={<Lazy><Notes /></Lazy>} />
-        <Route path="/planner" element={<Lazy><Planner /></Lazy>} />
-        <Route path="/assignments" element={<Lazy><Assignments /></Lazy>} />
         <Route path="/ai" element={<Lazy><AIAssistant /></Lazy>} />
         <Route path="/coding" element={<Lazy><CodingHub /></Lazy>} />
-        <Route path="/analytics" element={<Lazy><Analytics /></Lazy>} />
+        <Route path="/notifications" element={<Lazy><Notifications /></Lazy>} />
         <Route path="/profile" element={<Lazy><Profile /></Lazy>} />
         <Route path="/settings" element={<Lazy><Settings /></Lazy>} />
         <Route path="/help" element={<Lazy><HelpCenter /></Lazy>} />
-        <Route path="/exams" element={<Lazy><ExamSchedule /></Lazy>} />
-        <Route path="/coding-progress" element={<Lazy><CodingProgress /></Lazy>} />
-        <Route path="/notifications" element={<Lazy><Notifications /></Lazy>} />
-        <Route path="/connect" element={<Lazy><Connect /></Lazy>} />
-        <Route path="/group-study" element={<Lazy><GroupStudy /></Lazy>} />
-
-        {/* Teacher Module Routes */}
-        <Route path="/teacher/dashboard" element={<Lazy><TeacherDashboard /></Lazy>} />
-        <Route path="/teacher/attendance" element={<Lazy><TeacherAttendance /></Lazy>} />
-        <Route path="/teacher/assignments" element={<Lazy><TeacherAssignments /></Lazy>} />
-        <Route path="/teacher/students" element={<Lazy><TeacherStudents /></Lazy>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

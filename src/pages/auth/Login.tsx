@@ -8,7 +8,7 @@ import { useAuth } from '../../lib/auth';
 import type { UserRole } from '../../lib/types';
 
 export default function Login({ defaultRole }: { defaultRole?: UserRole }) {
-  const { signIn, signInWithGoogle, updateRole } = useAuth();
+  const { signIn, signInWithGoogle, role } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,9 +27,9 @@ export default function Login({ defaultRole }: { defaultRole?: UserRole }) {
     }
   }, [isTeacherRoute]);
 
-  const fillDemo = (role: UserRole) => {
-    setSelectedRole(role);
-    if (role === 'teacher') {
+  const fillDemo = (r: UserRole) => {
+    setSelectedRole(r);
+    if (r === 'teacher') {
       setEmail('teacher@studysphere.edu');
       setPassword('teacher123');
     } else {
@@ -57,21 +57,17 @@ export default function Login({ defaultRole }: { defaultRole?: UserRole }) {
     setLoading(false);
 
     if (authError) {
-      // If credentials do not exist on remote Supabase (e.g. demo credentials),
-      // support seamless demo login for testing role workflows smoothly!
+      // Demo fallback login
       if (email.includes('teacher') || selectedRole === 'teacher') {
-        await updateRole('teacher');
         navigate('/teacher/dashboard');
         return;
       } else if (email.includes('student') || selectedRole === 'student') {
-        await updateRole('student');
         navigate('/dashboard');
         return;
       }
       setError(authError);
     } else {
-      await updateRole(selectedRole);
-      if (selectedRole === 'teacher') {
+      if (selectedRole === 'teacher' || role === 'teacher') {
         navigate('/teacher/dashboard');
       } else {
         navigate('/dashboard');

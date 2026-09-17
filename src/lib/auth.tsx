@@ -23,7 +23,6 @@ type AuthState = {
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  updateRole: (role: UserRole) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -195,43 +194,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const [roleOverride, setRoleOverride] = useState<UserRole | null>(() => {
-    try {
-      return (localStorage.getItem('studysphere_active_role') as UserRole) || null;
-    } catch {
-      return null;
-    }
-  });
-
   const activeRole: UserRole =
-    roleOverride ||
     (profile?.role as UserRole) ||
     (session?.user?.user_metadata?.role as UserRole) ||
     'student';
-
-  const updateRole = async (newRole: UserRole) => {
-    setRoleOverride(newRole);
-    try {
-      localStorage.setItem('studysphere_active_role', newRole);
-    } catch {
-      // ignore
-    }
-    if (profile) {
-      setProfile({ ...profile, role: newRole });
-    }
-    if (session?.user) {
-      try {
-        await supabase.auth.updateUser({ data: { role: newRole } });
-      } catch {
-        // ignore
-      }
-      try {
-        await supabase.from('profiles').update({ role: newRole }).eq('id', session.user.id);
-      } catch {
-        // ignore
-      }
-    }
-  };
 
   const signUp = async (
     email: string,
@@ -257,12 +223,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.user) {
       const p = await ensureProfile(data.user, userRole, extra);
       setProfile(p);
-      setRoleOverride(userRole);
-      try {
-        localStorage.setItem('studysphere_active_role', userRole);
-      } catch {
-        // ignore
-      }
     }
     return { error: null };
   };
@@ -286,12 +246,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setSession(null);
-    setRoleOverride(null);
-    try {
-      localStorage.removeItem('studysphere_active_role');
-    } catch {
-      // ignore
-    }
   };
 
   return (
@@ -308,7 +262,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resetPassword,
         signOut,
         refreshProfile,
-        updateRole,
       }}
     >
       {children}
