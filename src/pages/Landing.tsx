@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Sparkles, StickyNote, Calendar, Bot, Code2, BarChart3, ArrowRight,
   Shield, Zap, Cloud, Layers, Users, GraduationCap, CheckCircle2,
+  Download, Laptop, Smartphone, Check
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { InstallAppModal } from '../components/InstallAppModal';
+import { InstallAppBanner } from '../components/InstallAppBanner';
 
 const features = [
   { icon: GraduationCap, title: 'Teacher & Faculty Portal', desc: 'Teachers conduct daily class attendance, assign coursework, and grade student submissions.' },
@@ -18,6 +22,7 @@ const features = [
 export default function Landing() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   return (
     <div className="min-h-screen gradient-bg">
@@ -30,6 +35,12 @@ export default function Landing() {
             <span className="font-semibold text-lg">StudySphere</span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowInstallModal(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold glass text-indigo-400 hover:bg-indigo-500/10 transition flex items-center gap-1.5 border border-indigo-500/20"
+            >
+              <Download size={14} /> Download App
+            </button>
             {user ? (
               <button
                 onClick={() => navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard')}
@@ -41,7 +52,7 @@ export default function Landing() {
               <>
                 <Link
                   to="/teacher/login"
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold glass text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition flex items-center gap-1.5 border border-emerald-500/20"
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold glass text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition flex items-center gap-1.5 border border-emerald-500/20 hidden sm:flex"
                 >
                   <GraduationCap size={14} /> Faculty Portal
                 </Link>
@@ -156,6 +167,107 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Store Downloads & Native App Showcase Section */}
+      <section className="max-w-6xl mx-auto px-5 py-16">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-400 mb-3">
+            <Download size={13} /> Native Application Available
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold">Download StudySphere Application</h2>
+          <p className="mt-2 text-slate-500 dark:text-white/50 max-w-xl mx-auto">
+            Get the full desktop and mobile experience with offline access, instant notifications, and zero browser tab clutter.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Windows / Microsoft Store Card */}
+          <div className="glass rounded-3xl p-8 border border-white/10 hover:border-blue-500/30 transition relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/20 transition" />
+            
+            <div className="flex items-start justify-between mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-blue-500/25">
+                <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+                  <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.8" />
+                </svg>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                Windows 10 / 11
+              </span>
+            </div>
+
+            <h3 className="text-2xl font-bold mb-2">Microsoft Store (Windows)</h3>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              Standalone Windows desktop application packaged with MSIX. Pin to your taskbar, receive native system notifications, and study with dedicated hardware acceleration.
+            </p>
+
+            <ul className="space-y-2.5 text-xs text-slate-300 mb-8">
+              <li className="flex items-center gap-2">
+                <Check size={15} className="text-blue-400 shrink-0" />
+                <span>Runs in isolated high-performance window without browser overhead</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check size={15} className="text-blue-400 shrink-0" />
+                <span>Full offline timetable, planner, and cached notes support</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check size={15} className="text-blue-400 shrink-0" />
+                <span>Windows Start Menu live tiles and instant auto-updates</span>
+              </li>
+            </ul>
+
+            <button
+              onClick={() => setShowInstallModal(true)}
+              className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-xl shadow-blue-500/25 flex items-center justify-center gap-2 transition"
+            >
+              <Download size={16} /> Get it from Microsoft Store
+            </button>
+          </div>
+
+          {/* Android / Play Store Card */}
+          <div className="glass rounded-3xl p-8 border border-white/10 hover:border-emerald-500/30 transition relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition" />
+            
+            <div className="flex items-start justify-between mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-xl shadow-emerald-500/25">
+                <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+                  <path d="M3.609 1.814L13.792 12 3.61 22.186a1.99 1.99 0 0 1-.61-1.428V3.242c0-.555.226-1.059.61-1.428zm11.242 11.245l2.42 2.42-12.022 6.942 9.602-9.362zm0-2.118L5.25 1.579 17.27 8.52l-2.42 2.421zm1.06 1.059l3.525 2.036c.866.5.866 1.328 0 1.828l-3.525 2.036-2.06-2.06 2.06-2.04z" />
+                </svg>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                Android 8.0+
+              </span>
+            </div>
+
+            <h3 className="text-2xl font-bold mb-2">Google Play Store (Android)</h3>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              Native Android package (AAB &amp; APK) built with modern Capacitor architecture. Designed for phones and tablets with touch-first controls and responsive split views.
+            </p>
+
+            <ul className="space-y-2.5 text-xs text-slate-300 mb-8">
+              <li className="flex items-center gap-2">
+                <Check size={15} className="text-emerald-400 shrink-0" />
+                <span>Adaptive Android launcher icons, splash screen &amp; dark theme</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check size={15} className="text-emerald-400 shrink-0" />
+                <span>Class schedule alerts and peer study notifications</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check size={15} className="text-emerald-400 shrink-0" />
+                <span>Full offline storage for notes and study resources</span>
+              </li>
+            </ul>
+
+            <button
+              onClick={() => setShowInstallModal(true)}
+              className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 transition"
+            >
+              <Download size={16} /> Get it on Google Play
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section className="max-w-6xl mx-auto px-5 py-20">
         <div className="glass-strong rounded-3xl p-10 text-center relative overflow-hidden">
           <div className="absolute inset-0 gradient-bg opacity-60" />
@@ -163,12 +275,20 @@ export default function Landing() {
             <Layers className="mx-auto text-indigo-500 mb-4" size={32} />
             <h2 className="text-3xl font-bold">Ready to upgrade your study game?</h2>
             <p className="mt-2 text-slate-500 dark:text-white/55">Join StudySphere and bring every tool under one browser.</p>
-            <Link
-              to="/signup"
-              className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl gradient-brand text-white font-medium shadow-xl shadow-indigo-500/30"
-            >
-              Create your account <ArrowRight size={18} />
-            </Link>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                to="/signup"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl gradient-brand text-white font-medium shadow-xl shadow-indigo-500/30"
+              >
+                Create your account <ArrowRight size={18} />
+              </Link>
+              <button
+                onClick={() => setShowInstallModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl glass font-medium text-indigo-400 hover:bg-white/10 transition"
+              >
+                <Download size={18} /> Download App
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -176,6 +296,14 @@ export default function Landing() {
       <footer className="border-t border-white/10 py-8 text-center text-sm text-slate-500 dark:text-white/40">
         StudySphere — One Browser. Every Student Need.
       </footer>
+
+      {/* App Install Modal & Banner */}
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+      />
+      <InstallAppBanner />
     </div>
   );
 }
+

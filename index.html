@@ -3,14 +3,57 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>StudySphere — One Browser. Every Student Need.</title>
-    <meta property="og:image" content="https://bolt.new/static/og_default.png">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
-</head>
+    <meta name="description" content="StudySphere is the intelligent all-in-one student workspace combining AI copilot, timetable planner, group study rooms, and coding tracker." />
+    
+    <!-- Theme & Color settings -->
+    <meta name="theme-color" content="#0B0F19" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- Apple iOS / iPadOS PWA tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="StudySphere" />
+
+    <!-- Microsoft Windows Store & Edge Tile tags -->
+    <meta name="msapplication-TileColor" content="#0B0F19" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-square70x70logo" content="/icons/icon-72x72.png" />
+    <meta name="msapplication-square150x150logo" content="/icons/Square150x150Logo.png" />
+    <meta name="msapplication-wide310x150logo" content="/icons/Wide310x150Logo.png" />
+
+    <!-- Social / OpenGraph tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="StudySphere — One Browser. Every Student Need." />
+    <meta property="og:description" content="Intelligent all-in-one student workspace with AI copilot, smart planner, group study rooms, and coding tracker." />
+    <meta property="og:image" content="/icons/screenshot-desktop.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="StudySphere" />
+    <meta name="twitter:description" content="Intelligent all-in-one student workspace." />
+    <meta name="twitter:image" content="/icons/screenshot-desktop.png" />
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register Service Worker for PWA and Store functionality
+      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => {
+              console.log('[StudySphere PWA] Service Worker registered with scope:', reg.scope);
+            })
+            .catch((err) => {
+              console.log('[StudySphere PWA] Service Worker registration failed:', err);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

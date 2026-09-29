@@ -1,1 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="0.5" stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#g)"/><path d="M16 7l2.5 5 5.5.8-4 3.9.9 5.5L16 19.5 11.1 22l.9-5.5-4-3.9 5.5-.8z" fill="#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+    <defs>
+      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0F172A" />
+        <stop offset="50%" stop-color="#1E1B4B" />
+        <stop offset="100%" stop-color="#020617" />
+      </linearGradient>
+      <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#38BDF8" />
+        <stop offset="50%" stop-color="#6366F1" />
+        <stop offset="100%" stop-color="#A855F7" />
+      </linearGradient>
+      <linearGradient id="ringGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.8"/>
+        <stop offset="50%" stop-color="#818CF8" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#EC4899" stop-opacity="0.8"/>
+      </linearGradient>
+      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1.92" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+      <filter id="subtleGlow">
+        <feDropShadow dx="0" dy="0.96" stdDeviation="1.28" flood-color="#6366F1" flood-opacity="0.6"/>
+      </filter>
+    </defs>
+
+    <!-- Background (Full rectangle for maskable, rounded squircle for standard) -->
+    <rect width="64" height="64" rx="14.08" fill="url(#bgGrad)" />
+           <rect width="60" height="60" x="2" y="2" rx="12.08" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+
+    <!-- Background ambient glow circle -->
+    <circle cx="32" cy="32" r="20.10624" fill="url(#primaryGrad)" opacity="0.25" filter="url(#glow)"/>
+
+    <!-- Central Sphere Core -->
+    <circle cx="32" cy="32" r="17.031167999999997" fill="url(#primaryGrad)" filter="url(#subtleGlow)"/>
+
+    <!-- Inner sphere highlight -->
+    <circle cx="26.796032" cy="26.796032" r="5.9136" fill="#FFFFFF" opacity="0.3" filter="url(#glow)"/>
+
+    <!-- Orbital Academic Planetary Ring -->
+    <ellipse cx="32" cy="32" rx="27.20256" ry="9.934847999999999"
+      fill="none" stroke="url(#ringGrad)" stroke-width="2.048"
+      transform="rotate(-25 32 32)" stroke-dasharray="1.28 0" stroke-linecap="round"/>
+
+    <!-- Academic Star / Beacon symbol in center -->
+    <g transform="translate(32, 32) scale(0.224)">
+      <path d="M0 -34 L9 -11 L33 -11 L14 4 L21 27 L0 14 L-21 27 L-14 4 L-33 -11 L-9 -11 Z" fill="#FFFFFF" opacity="0.95"/>
+      <circle cx="0" cy="0" r="6" fill="#38BDF8"/>
+    </g>
+
+    <!-- Tiny satellite particle on orbit -->
+    <circle cx="55.181312" cy="23.72096" r="2" fill="#38BDF8" filter="url(#glow)"/>
+    <circle cx="10.237952" cy="39.569408" r="2" fill="#EC4899" filter="url(#glow)"/>
+  </svg>

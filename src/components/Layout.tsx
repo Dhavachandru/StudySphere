@@ -4,12 +4,14 @@ import {
   LayoutDashboard, StickyNote, Calendar, ClipboardList,
   Bot, Code2, BarChart3, User, Settings, HelpCircle, LogOut, Menu, X,
   Search, Sun, Moon, Sparkles, CalendarClock, TrendingUp, Bell, Users, GraduationCap,
-  BookOpen, CheckCircle2,
+  BookOpen, CheckCircle2, Download
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
 import type { UserRole } from '../lib/types';
+import { InstallAppModal } from './InstallAppModal';
+import { InstallAppBanner } from './InstallAppBanner';
 
 const studentNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -46,6 +48,7 @@ export function Layout() {
   const { profile, role, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -94,7 +97,22 @@ export function Layout() {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-white/10 space-y-1">
+        <button
+          onClick={() => {
+            setOpen(false);
+            setShowInstallModal(true);
+          }}
+          className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm w-full text-indigo-400 hover:bg-indigo-500/10 transition font-medium"
+        >
+          <div className="flex items-center gap-3">
+            <Download size={18} /> Download App
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300">
+            App Stores
+          </span>
+        </button>
+
         <button
           onClick={async () => {
             await signOut();
@@ -171,6 +189,14 @@ export function Layout() {
               </span>
             )}
 
+            <button
+              onClick={() => setShowInstallModal(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold glass text-indigo-400 hover:bg-indigo-500/10 transition border border-indigo-500/20"
+              title="Download App for Windows & Android"
+            >
+              <Download size={14} /> Download App
+            </button>
+
             <button onClick={toggle} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition" title="Toggle theme">
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -202,6 +228,13 @@ export function Layout() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Store Download / PWA Install Modal & Banner */}
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+      />
+      <InstallAppBanner />
     </div>
   );
 }
