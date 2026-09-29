@@ -33,6 +33,7 @@ export default function AIAssistant() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showHistoryMobile, setShowHistoryMobile] = useState(false);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(() => getCustomApiKey() || '');
   const [hasApiKey, setHasApiKey] = useState(() => Boolean(getCustomApiKey()));
@@ -201,47 +202,83 @@ export default function AIAssistant() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2"><Bot className="text-indigo-500" /> AI Assistant</h1>
-          <p className="text-sm text-slate-500 dark:text-white/50">Chat, explain code, summarize, generate notes, flashcards, quizzes & translate.</p>
+          <p className="text-sm text-slate-500 dark:text-white/50">Chat, explain code, summarize, generate notes, flashcards, quizzes &amp; translate.</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setKeyModalOpen(true)}
-          className="text-xs flex items-center gap-1.5"
-        >
-          <Key size={13} className={hasApiKey ? 'text-emerald-400' : 'text-indigo-400'} />
-          {hasApiKey ? 'Custom API Key (Active)' : 'AI Model: Built-in (Ready)'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Mobile Conversation History Toggle */}
+          <button
+            onClick={() => setShowHistoryMobile(!showHistoryMobile)}
+            className="lg:hidden px-3 py-1.5 rounded-xl glass text-xs font-semibold text-indigo-400 hover:bg-white/10 active:scale-95 transition"
+          >
+            {showHistoryMobile ? 'View Chat' : `Past Chats (${conversations.length})`}
+          </button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setKeyModalOpen(true)}
+            className="text-xs flex items-center gap-1.5 active:scale-95"
+          >
+            <Key size={13} className={hasApiKey ? 'text-emerald-400' : 'text-indigo-400'} />
+            <span className="hidden sm:inline">{hasApiKey ? 'Custom API Key (Active)' : 'AI Model: Built-in (Ready)'}</span>
+            <span className="sm:hidden">Settings</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-4 gap-4 h-[70vh]">
-        <GlassCard className="lg:col-span-1 p-3 flex flex-col">
-          <Button size="sm" onClick={newChat} className="mb-2"><Plus size={15} /> New chat</Button>
+      <div className="grid lg:grid-cols-4 gap-4 h-[75vh] lg:h-[70vh]">
+        {/* Conversation History (Collapsible on mobile) */}
+        <GlassCard className={`${showHistoryMobile ? 'flex' : 'hidden lg:flex'} lg:col-span-1 p-3 flex flex-col h-full`}>
+          <Button size="sm" onClick={newChat} className="mb-2 active:scale-95"><Plus size={15} /> New chat</Button>
           <div className="flex-1 overflow-y-auto space-y-1">
-            {conversations.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No conversations</p>}
+            {conversations.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No conversations yet</p>}
             {conversations.map((c) => (
-              <div key={c.id} className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition ${activeConv === c.id ? 'glass-strong' : 'hover:bg-black/5 dark:hover:bg-white/10'}`} onClick={() => setActiveConv(c.id)}>
-                <Bot size={14} className="text-indigo-400 shrink-0" />
-                <span className="text-sm truncate flex-1">{c.title}</span>
-                <button onClick={(e) => { e.stopPropagation(); deleteConv(c.id); }} title="Delete chat" className="opacity-40 hover:opacity-100 text-rose-400 p-1 rounded hover:bg-rose-500/10 transition"><Trash2 size={13} /></button>
+              <div
+                key={c.id}
+                className={`group flex items-center gap-2 p-2.5 rounded-xl cursor-pointer transition active:scale-[0.98] ${
+                  activeConv === c.id ? 'glass-strong ring-1 ring-indigo-400/50' : 'hover:bg-black/5 dark:hover:bg-white/10'
+                }`}
+                onClick={() => {
+                  setActiveConv(c.id);
+                  setShowHistoryMobile(false);
+                }}
+              >
+                <Bot size={15} className="text-indigo-400 shrink-0" />
+                <span className="text-xs sm:text-sm truncate flex-1 font-medium">{c.title}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteConv(c.id); }}
+                  title="Delete chat"
+                  className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/15 transition active:scale-90"
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
             ))}
           </div>
         </GlassCard>
 
-        <GlassCard className="lg:col-span-3 flex flex-col p-0 overflow-hidden">
-          <div className="flex items-center gap-1 overflow-x-auto p-2 border-b border-white/10">
+        {/* Chat Main Window */}
+        <GlassCard className={`${showHistoryMobile ? 'hidden lg:flex' : 'flex'} lg:col-span-3 flex flex-col p-0 overflow-hidden h-full`}>
+          <div className="flex items-center gap-1.5 overflow-x-auto p-2 border-b border-white/10 bg-black/5 dark:bg-white/5 scrollbar-none">
             {KINDS.map(({ id, label, icon: Icon }) => (
-              <button key={id} onClick={() => setKind(id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition ${kind === id ? 'gradient-brand text-white' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}>
-                <Icon size={13} /> {label}
+              <button
+                key={id}
+                onClick={() => setKind(id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition active:scale-95 ${
+                  kind === id
+                    ? 'gradient-brand text-white shadow-sm shadow-indigo-500/25 font-semibold'
+                    : 'hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Icon size={14} /> {label}
               </button>
             ))}
             {activeConv && messages.length > 0 && (
               <button
                 onClick={() => deleteConv(activeConv)}
-                className="ml-auto text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-1 rounded hover:bg-rose-500/10 transition shrink-0"
+                className="ml-auto text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/10 transition shrink-0 active:scale-95"
               >
-                <Trash2 size={12} /> Clear chat
+                <Trash2 size={13} /> Clear
               </button>
             )}
           </div>
@@ -277,9 +314,13 @@ export default function AIAssistant() {
                           <span className="whitespace-pre-wrap">{m.content}</span>
                         )}
                         {m.role === 'assistant' && !isFailed && (
-                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/10 opacity-0 group-hover:opacity-100 transition">
-                            <button onClick={() => copyMsg(m.id, m.content)} className="text-xs flex items-center gap-1 text-slate-500 dark:text-white/50 hover:text-indigo-500">
-                              {copiedId === m.id ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />} Copy
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/10 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                            <button
+                              onClick={() => copyMsg(m.id, m.content)}
+                              className="text-xs flex items-center gap-1.5 text-slate-400 hover:text-indigo-400 p-1.5 rounded-lg active:scale-90 transition font-medium"
+                            >
+                              {copiedId === m.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                              <span>{copiedId === m.id ? 'Copied' : 'Copy'}</span>
                             </button>
                           </div>
                         )}
@@ -300,24 +341,35 @@ export default function AIAssistant() {
             )}
           </div>
 
-          <div className="p-3 border-t border-white/10">
+          <div className="p-3 border-t border-white/10 bg-black/5 dark:bg-white/5">
             <div className="flex items-end gap-2">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                placeholder={`Message StudySphere (${KINDS.find((k) => k.id === kind)?.label})…`}
+                placeholder={`Ask StudySphere AI (${KINDS.find((k) => k.id === kind)?.label})…`}
                 rows={1}
-                className="flex-1 px-4 py-2.5 rounded-xl glass resize-none outline-none text-sm focus:ring-2 focus:ring-indigo-400/40"
+                className="flex-1 px-4 py-3 rounded-2xl glass resize-none outline-none text-base sm:text-sm focus:ring-2 focus:ring-indigo-400/50 placeholder:text-slate-400"
               />
               {busy ? (
-                <Button onClick={stop} variant="danger" size="md"><StopCircle size={16} /> Stop</Button>
+                <Button onClick={stop} variant="danger" size="md" className="shrink-0 active:scale-95 shadow-md">
+                  <StopCircle size={17} /> <span className="hidden sm:inline">Stop</span>
+                </Button>
               ) : (
-                <Button onClick={send} disabled={!input.trim()} size="md"><Send size={16} /></Button>
+                <Button
+                  onClick={send}
+                  disabled={!input.trim()}
+                  size="md"
+                  className="shrink-0 min-w-[46px] min-h-[46px] active:scale-95 shadow-md"
+                >
+                  <Send size={17} />
+                </Button>
               )}
             </div>
             {error && !busy && (
-              <button onClick={retry} className="mt-2 text-xs flex items-center gap-1 text-indigo-500 hover:underline"><RotateCw size={12} /> Retry last message</button>
+              <button onClick={retry} className="mt-2 text-xs flex items-center gap-1 text-indigo-400 hover:underline active:scale-95">
+                <RotateCw size={12} /> Retry last message
+              </button>
             )}
           </div>
         </GlassCard>

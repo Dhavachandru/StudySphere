@@ -86,10 +86,10 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
             </div>
 
             {/* Platform Selector Tabs */}
-            <div className="flex p-1 bg-white/5 rounded-2xl mb-6 border border-white/5">
+            <div className="flex p-1 bg-white/5 rounded-2xl mb-6 border border-white/5 overflow-x-auto scrollbar-none gap-1">
               <button
                 onClick={() => setActiveTab('windows')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition whitespace-nowrap min-h-[42px] active:scale-95 ${
                   activeTab === 'windows'
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white'
@@ -99,7 +99,7 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
               </button>
               <button
                 onClick={() => setActiveTab('android')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition whitespace-nowrap min-h-[42px] active:scale-95 ${
                   activeTab === 'android'
                     ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white'
@@ -109,7 +109,7 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
               </button>
               <button
                 onClick={() => setActiveTab('pwa')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition whitespace-nowrap min-h-[42px] active:scale-95 ${
                   activeTab === 'pwa'
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white'
@@ -140,7 +140,7 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button
                       onClick={handleDirectInstall}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium text-xs sm:text-sm shadow-lg shadow-blue-500/25 flex items-center justify-center gap-1.5 transition"
+                      className="w-full sm:w-auto px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-blue-500/25 flex items-center justify-center gap-1.5 active:scale-95 transition min-h-[44px]"
                     >
                       <Download size={15} /> Install on Windows
                     </button>
@@ -184,7 +184,7 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button
                       onClick={handleDirectInstall}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-xs sm:text-sm shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-1.5 transition"
+                      className="w-full sm:w-auto px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-1.5 active:scale-95 transition min-h-[44px]"
                     >
                       <Download size={15} /> Install on Android
                     </button>
@@ -226,15 +226,15 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
                       </p>
                     </div>
                   </div>
-                  <div>
+                  <div className="w-full sm:w-auto">
                     {isInstalled || installedSuccess ? (
-                      <div className="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-500/30">
+                      <div className="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-emerald-500/30 min-h-[44px]">
                         <Check size={16} /> App Installed!
                       </div>
                     ) : (
                       <button
                         onClick={handleDirectInstall}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium text-xs sm:text-sm shadow-lg shadow-purple-500/25 flex items-center justify-center gap-1.5 transition"
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-500/25 flex items-center justify-center gap-1.5 active:scale-95 transition min-h-[44px]"
                       >
                         <Download size={15} /> Install Now
                       </button>

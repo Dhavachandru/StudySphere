@@ -158,11 +158,11 @@ export default function Assignments() {
         </div>
 
         {/* View Switcher: Teacher Tasks vs Personal Tasks */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl glass border border-white/10 self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl glass border border-white/10 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab('teacher')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition min-h-[40px] active:scale-95 ${
               activeTab === 'teacher'
                 ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                 : 'text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white'
@@ -173,7 +173,7 @@ export default function Assignments() {
           <button
             type="button"
             onClick={() => setActiveTab('personal')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition min-h-[40px] active:scale-95 ${
               activeTab === 'personal'
                 ? 'gradient-brand text-white shadow-md shadow-indigo-500/20'
                 : 'text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white'
@@ -189,7 +189,7 @@ export default function Assignments() {
       {/* 1. TEACHER COURSEWORK TAB */}
       {activeTab === 'teacher' ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-slate-400">
               Tasks and homework assigned directly by your teachers & professors.
             </p>
@@ -215,7 +215,7 @@ export default function Assignments() {
                 const days = task.due_date ? Math.ceil((new Date(task.due_date).getTime() - Date.now()) / 86400000) : null;
 
                 return (
-                  <GlassCard key={task.id} className="p-5 flex flex-col justify-between space-y-4">
+                  <GlassCard key={task.id} className="p-4 sm:p-5 flex flex-col justify-between space-y-4">
                     <div className="space-y-2.5">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -237,7 +237,7 @@ export default function Assignments() {
                               : 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
                           }`}
                         >
-                          {isGraded ? `Graded: ${sub?.grade}/${task.total_points} pts` : isSubmitted ? 'Submitted' : 'Pending Submission'}
+                          {isGraded ? `Graded: ${sub?.grade}/${task.total_points} pts` : isSubmitted ? 'Submitted' : 'Pending'}
                         </span>
                       </div>
 
@@ -272,7 +272,7 @@ export default function Assignments() {
                       <Button
                         size="sm"
                         onClick={() => openSubmitModal(task)}
-                        className={`w-full text-xs ${
+                        className={`w-full min-h-[42px] text-xs font-semibold ${
                           isGraded
                             ? 'bg-white/10 text-slate-300 hover:bg-white/15'
                             : isSubmitted
@@ -280,7 +280,7 @@ export default function Assignments() {
                             : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-500/20'
                         }`}
                       >
-                        <Send size={13} /> {isGraded ? 'View Submitted Solution' : isSubmitted ? 'Update Submission' : 'Submit Assignment'}
+                        <Send size={14} /> {isGraded ? 'View Submitted Solution' : isSubmitted ? 'Update Submission' : 'Submit Assignment'}
                       </Button>
                     </div>
                   </GlassCard>
@@ -292,14 +292,14 @@ export default function Assignments() {
       ) : (
         /* 2. PERSONAL ASSIGNMENTS TRACKER */
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1 overflow-x-auto pb-1">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
               {['all', ...STATUSES].map((s) => (
                 <button
                   key={s}
                   onClick={() => setFilter(s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs capitalize whitespace-nowrap transition ${
-                    filter === s ? 'gradient-brand text-white' : 'glass hover:bg-white/70 dark:hover:bg-white/10'
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium capitalize whitespace-nowrap min-h-[36px] active:scale-95 transition ${
+                    filter === s ? 'gradient-brand text-white shadow-sm' : 'glass hover:bg-white/70 dark:hover:bg-white/10'
                   }`}
                 >
                   {s.replace('-', ' ')}
@@ -319,7 +319,7 @@ export default function Assignments() {
               { label: 'In progress', value: stats.inProgress, color: 'from-sky-500 to-cyan-500' },
               { label: 'Completed', value: stats.completed, color: 'from-emerald-500 to-teal-500' },
             ].map((s) => (
-              <GlassCard key={s.label} className="p-4">
+              <GlassCard key={s.label} className="p-3.5 sm:p-4">
                 <div
                   className={`w-8 h-8 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center text-white mb-2`}
                 >
@@ -351,21 +351,22 @@ export default function Assignments() {
                 const done = a.status === 'completed';
                 return (
                   <motion.div key={a.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <GlassCard className="p-4 group">
+                    <GlassCard className="p-3.5 sm:p-4">
                       <div className="flex items-start gap-3">
                         <button
                           onClick={() => update(a, { status: done ? 'pending' : 'completed' })}
-                          className={`mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${
-                            done ? 'gradient-brand border-transparent' : 'border-slate-300 dark:border-white/20'
+                          className={`mt-0.5 w-8 h-8 rounded-xl border-2 flex items-center justify-center transition shrink-0 active:scale-90 ${
+                            done ? 'gradient-brand border-transparent shadow-sm' : 'border-slate-300 dark:border-white/20'
                           }`}
+                          title={done ? 'Mark pending' : 'Mark completed'}
                         >
-                          {done && <Check size={14} className="text-white" />}
+                          {done && <Check size={16} className="text-white" />}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`font-medium ${done ? 'line-through text-slate-400' : ''}`}>{a.title}</p>
+                            <p className={`font-medium text-sm ${done ? 'line-through text-slate-400' : ''}`}>{a.title}</p>
                             <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full ${
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                                 a.priority === 'high'
                                   ? 'bg-rose-500/15 text-rose-500'
                                   : a.priority === 'medium'
@@ -381,7 +382,7 @@ export default function Assignments() {
                             {a.due_date && (
                               <span
                                 className={`flex items-center gap-1 ${
-                                  days !== null && days <= 2 && !done ? 'text-rose-500' : ''
+                                  days !== null && days <= 2 && !done ? 'text-rose-500 font-semibold' : ''
                                 }`}
                               >
                                 <Clock size={12} /> {new Date(a.due_date).toLocaleDateString()}{' '}
@@ -394,7 +395,7 @@ export default function Assignments() {
                         <select
                           value={a.status}
                           onChange={(e) => update(a, { status: e.target.value })}
-                          className="px-2 py-1 rounded-lg glass text-xs capitalize"
+                          className="px-2.5 py-1.5 rounded-xl glass text-xs capitalize shrink-0 min-h-[36px]"
                         >
                           {STATUSES.map((s) => (
                             <option key={s} value={s}>
@@ -404,9 +405,10 @@ export default function Assignments() {
                         </select>
                         <button
                           onClick={() => remove(a.id)}
-                          className="opacity-0 group-hover:opacity-100 text-rose-500 p-1"
+                          className="p-2 rounded-lg text-rose-400/80 hover:text-rose-400 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
+                          title="Delete task"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </GlassCard>

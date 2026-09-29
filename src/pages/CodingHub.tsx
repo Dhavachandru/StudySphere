@@ -282,23 +282,29 @@ export default function CodingHub() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={copyCode} title="Copy code to clipboard">
+          <Button variant="secondary" size="sm" onClick={copyCode} title="Copy code to clipboard" className="min-h-[40px] active:scale-95">
             {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Copied' : 'Copy'}
           </Button>
-          <Button size="sm" onClick={runCode} loading={running} title="Run Code (Ctrl + Enter)">
+          <Button
+            size="sm"
+            onClick={runCode}
+            loading={running}
+            title="Run Code (Ctrl + Enter)"
+            className="min-h-[40px] px-4 font-bold active:scale-95 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-500/20"
+          >
             <Play size={15} /> Run
           </Button>
         </div>
       </div>
 
       {/* Language Tabs */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-        <div className="flex gap-1.5">
+      <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="flex gap-2">
           {LANGS.map(({ id, label, compiler }) => (
             <button
               key={id}
               onClick={() => setLang(id)}
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition flex items-center gap-2 ${
+              className={`px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition flex items-center gap-2 min-h-[42px] active:scale-95 ${
                 lang === id
                   ? 'gradient-brand text-white shadow-lg shadow-indigo-500/25'
                   : 'glass hover:bg-white/70 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
@@ -306,7 +312,7 @@ export default function CodingHub() {
             >
               <span>{label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.5 rounded ${
+                className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
                   lang === id ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10 text-slate-500 dark:text-white/50'
                 }`}
               >
@@ -325,9 +331,9 @@ export default function CodingHub() {
       </div>
 
       {/* Split-screen layout: Editor & Terminal */}
-      <div className="grid lg:grid-cols-2 gap-4 h-[65vh] min-h-[500px]">
+      <div className="grid lg:grid-cols-2 gap-4 min-h-[550px] lg:h-[65vh]">
         {/* Code Editor Pane */}
-        <GlassCard className="flex flex-col p-0 overflow-hidden shadow-lg border border-slate-200/60 dark:border-white/10">
+        <GlassCard className="flex flex-col p-0 overflow-hidden shadow-lg border border-slate-200/60 dark:border-white/10 min-h-[280px]">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200/60 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02]">
             <div className="flex items-center gap-2">
               <FileCode size={15} className="text-indigo-500" />
@@ -339,7 +345,7 @@ export default function CodingHub() {
               <button
                 onClick={resetCode}
                 title="Reset to template sample"
-                className="flex items-center gap-1 text-xs text-slate-500 dark:text-white/50 hover:text-indigo-500 transition px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-white/50 hover:text-indigo-500 active:scale-95 transition px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 min-h-[32px]"
               >
                 <RotateCw size={13} />
                 <span>Reset</span>
@@ -352,7 +358,7 @@ export default function CodingHub() {
             onChange={(e) => updateCode(e.target.value)}
             onKeyDown={handleEditorKeyDown}
             spellCheck={false}
-            className="code-area flex-1 p-4 bg-transparent outline-none resize-none font-mono text-sm leading-relaxed text-slate-900 dark:text-slate-100 selection:bg-indigo-500/30"
+            className="code-area flex-1 p-4 bg-transparent outline-none resize-none font-mono text-base sm:text-sm leading-relaxed text-slate-900 dark:text-slate-100 selection:bg-indigo-500/30 min-h-[220px]"
             placeholder={`Write your ${currentLangConfig.label} code here...`}
           />
         </GlassCard>

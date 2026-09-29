@@ -118,10 +118,18 @@ export default function Planner() {
         <Button onClick={() => setOpen(true)}><Plus size={16} /> Add entry</Button>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
         {tabs.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setTab(id)} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm whitespace-nowrap transition ${tab === id ? 'gradient-brand text-white shadow-lg shadow-indigo-500/25' : 'glass hover:bg-white/70 dark:hover:bg-white/10'}`}>
-            <Icon size={15} /> {label}
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition min-h-[42px] active:scale-95 ${
+              tab === id
+                ? 'gradient-brand text-white shadow-lg shadow-indigo-500/25'
+                : 'glass hover:bg-white/70 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200'
+            }`}
+          >
+            <Icon size={16} /> {label}
           </button>
         ))}
       </div>
@@ -133,17 +141,23 @@ export default function Planner() {
               {DAYS.map((day) => {
                 const items = filtered.filter((e) => e.day_of_week === day).sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
                 return (
-                  <GlassCard key={day} className="p-3 min-h-[200px]">
-                    <h3 className="font-semibold text-sm mb-2">{day}</h3>
-                    <div className="space-y-1.5">
+                  <GlassCard key={day} className="p-3.5 min-h-[180px]">
+                    <h3 className="font-semibold text-sm mb-2 text-indigo-400">{day}</h3>
+                    <div className="space-y-2">
                       {items.length === 0 && <p className="text-xs text-slate-400 py-4 text-center">No classes</p>}
                       {items.map((e) => (
-                        <div key={e.id} className="group p-2 rounded-lg glass">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-medium">{e.title || e.subject}</p>
-                            <button onClick={() => remove(e.id)} className="opacity-0 group-hover:opacity-100 text-rose-500"><Trash2 size={12} /></button>
+                        <div key={e.id} className="p-2.5 rounded-xl glass active:scale-[0.99] transition flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold truncate">{e.title || e.subject}</p>
+                            <p className="text-[10px] text-slate-500 dark:text-white/50">{e.start_time?.slice(11, 16)} {e.end_time ? `– ${e.end_time.slice(11, 16)}` : ''}</p>
                           </div>
-                          <p className="text-[10px] text-slate-500 dark:text-white/50">{e.start_time?.slice(11, 16)} {e.end_time ? `– ${e.end_time.slice(11, 16)}` : ''}</p>
+                          <button
+                            onClick={() => remove(e.id)}
+                            className="p-2 rounded-lg text-rose-400/80 hover:text-rose-400 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
+                            title="Delete entry"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -158,17 +172,23 @@ export default function Planner() {
               {filtered.length === 0 ? <EmptyState icon={<Clock size={24} />} title="No exams scheduled" /> : filtered.map((e) => {
                 const days = e.exam_date ? Math.ceil((new Date(e.exam_date).getTime() - Date.now()) / 86400000) : 0;
                 return (
-                  <GlassCard key={e.id} className="p-4 group">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">{e.title || e.subject}</p>
+                  <GlassCard key={e.id} className="p-4 flex flex-col justify-between">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{e.title || e.subject}</p>
                         <p className="text-xs text-slate-500 dark:text-white/50">{e.exam_date ? new Date(e.exam_date).toLocaleDateString() : ''}</p>
                       </div>
-                      <button onClick={() => remove(e.id)} className="opacity-0 group-hover:opacity-100 text-rose-500"><Trash2 size={14} /></button>
+                      <button
+                        onClick={() => remove(e.id)}
+                        className="p-2 rounded-lg text-rose-400/80 hover:text-rose-400 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
+                        title="Delete exam"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
-                    <div className="mt-3 text-center py-2 rounded-xl gradient-brand text-white">
+                    <div className="mt-3 text-center py-2.5 rounded-xl gradient-brand text-white shadow-md">
                       <p className="text-2xl font-bold">{days <= 0 ? 'Today' : days}</p>
-                      <p className="text-[10px]">{days <= 0 ? 'Good luck!' : 'days to go'}</p>
+                      <p className="text-[10px] font-medium">{days <= 0 ? 'Good luck!' : 'days to go'}</p>
                     </div>
                   </GlassCard>
                 );
@@ -261,10 +281,14 @@ export default function Planner() {
                     filtered.map((e) => {
                       const pct = e.attendance_total > 0 ? Math.round((e.attendance_present / e.attendance_total) * 100) : 0;
                       return (
-                        <GlassCard key={e.id} className="p-4 group">
-                          <div className="flex items-center justify-between">
-                            <p className="font-semibold">{e.title || e.subject}</p>
-                            <button onClick={() => remove(e.id)} className="opacity-0 group-hover:opacity-100 text-rose-500 p-1">
+                        <GlassCard key={e.id} className="p-4">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold truncate">{e.title || e.subject}</p>
+                            <button
+                              onClick={() => remove(e.id)}
+                              className="p-2 rounded-lg text-rose-400/80 hover:text-rose-400 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
+                              title="Delete tracker"
+                            >
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -289,8 +313,14 @@ export default function Planner() {
           {tab === 'gpa' && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {filtered.length === 0 ? <EmptyState icon={<Award size={24} />} title="No GPA entries" /> : filtered.map((e) => (
-                <GlassCard key={e.id} className="p-4 text-center group">
-                  <button onClick={() => remove(e.id)} className="float-right opacity-0 group-hover:opacity-100 text-rose-500"><Trash2 size={14} /></button>
+                <GlassCard key={e.id} className="p-4 text-center relative">
+                  <button
+                    onClick={() => remove(e.id)}
+                    className="absolute top-2 right-2 p-2 rounded-lg text-rose-400/80 hover:text-rose-400 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center"
+                    title="Delete GPA"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                   <p className="text-xs text-slate-500 dark:text-white/50">{e.title}</p>
                   <p className="text-4xl font-bold gradient-text mt-1">{e.gpa ?? '—'}</p>
                   <p className="text-xs text-slate-400">GPA</p>
@@ -302,13 +332,19 @@ export default function Planner() {
           {tab === 'semester' && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {filtered.length === 0 ? <EmptyState icon={<GraduationCap size={24} />} title="No semester entries" /> : filtered.map((e) => (
-                <GlassCard key={e.id} className="p-4 group">
-                  <div className="flex items-center justify-between">
+                <GlassCard key={e.id} className="p-4">
+                  <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="font-semibold">{e.title}</p>
                       <p className="text-xs text-slate-500 dark:text-white/50">Semester {e.semester_number}</p>
                     </div>
-                    <button onClick={() => remove(e.id)} className="opacity-0 group-hover:opacity-100 text-rose-500"><Trash2 size={14} /></button>
+                    <button
+                      onClick={() => remove(e.id)}
+                      className="p-2 rounded-lg text-rose-400/80 hover:text-rose-400 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
+                      title="Delete semester"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                   {e.notes && <p className="text-xs text-slate-500 dark:text-white/50 mt-2">{e.notes}</p>}
                 </GlassCard>
@@ -336,9 +372,15 @@ export default function Planner() {
                   <div className="space-y-2">
                     {periodGoals.map((g) => (
                       <motion.div key={g.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <GlassCard className="p-4 group flex items-center gap-3">
-                          <button onClick={() => toggleGoal(g)} className={`w-7 h-7 rounded-full flex items-center justify-center transition shrink-0 ${g.completed ? 'gradient-brand text-white' : 'glass hover:bg-white/70 dark:hover:bg-white/10'}`}>
-                            {g.completed ? <CheckCircle size={16} /> : <Circle size={16} className="text-slate-400" />}
+                        <GlassCard className="p-3.5 flex items-center gap-3">
+                          <button
+                            onClick={() => toggleGoal(g)}
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition shrink-0 active:scale-90 min-w-[36px] min-h-[36px] ${
+                              g.completed ? 'gradient-brand text-white shadow-sm' : 'glass hover:bg-white/70 dark:hover:bg-white/10'
+                            }`}
+                            title={g.completed ? 'Mark uncompleted' : 'Mark completed'}
+                          >
+                            {g.completed ? <CheckCircle size={18} /> : <Circle size={18} className="text-slate-400" />}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-medium ${g.completed ? 'line-through text-slate-400' : ''}`}>{g.title}</p>
@@ -347,7 +389,13 @@ export default function Planner() {
                               {g.due_date && <span>· due {new Date(g.due_date).toLocaleDateString()}</span>}
                             </div>
                           </div>
-                          <button onClick={() => removeGoal(g.id)} className="opacity-0 group-hover:opacity-100 text-rose-500 p-1"><Trash2 size={14} /></button>
+                          <button
+                            onClick={() => removeGoal(g.id)}
+                            className="p-2 rounded-lg text-rose-400/80 hover:text-rose-400 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
+                            title="Delete goal"
+                          >
+                            <Trash2 size={15} />
+                          </button>
                         </GlassCard>
                       </motion.div>
                     ))}

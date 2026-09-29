@@ -253,22 +253,28 @@ export default function GroupStudy() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-300">
-          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium">
+        <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-300 overflow-x-auto scrollbar-none pb-1">
+          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium whitespace-nowrap">
             <Target size={14} className="text-indigo-400" /> Complete Quests
           </div>
-          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium">
+          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium whitespace-nowrap">
             <Flame size={14} className="text-orange-400" /> Earn Points
           </div>
-          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium">
+          <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 font-medium whitespace-nowrap">
             <Award size={14} className="text-amber-400" /> Level Up Friends
           </div>
         </div>
       </div>
 
-      <div className="flex gap-1">
+      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
         {(['all', 'mine', 'joined'] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-sm capitalize transition ${filter === f ? 'gradient-brand text-white' : 'glass'}`}>
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3.5 py-2 rounded-xl text-sm font-medium capitalize transition min-h-[40px] active:scale-95 ${
+              filter === f ? 'gradient-brand text-white shadow-md shadow-indigo-500/25' : 'glass hover:bg-white/70 dark:hover:bg-white/10'
+            }`}
+          >
             {f === 'mine' ? 'My groups' : f}
           </button>
         ))}
@@ -293,7 +299,7 @@ export default function GroupStudy() {
 
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                <GlassCard className="p-5 h-full flex flex-col hover:border-indigo-500/30 transition">
+                <GlassCard className="p-4 sm:p-5 h-full flex flex-col hover:border-indigo-500/30 transition">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0">
                       <h3 className="font-semibold truncate text-base">{g.name}</h3>
@@ -322,25 +328,25 @@ export default function GroupStudy() {
                     <span className="text-xs text-slate-500 dark:text-white/50">{g.memberCount}/{g.max_members} members</span>
                   </div>
 
-                  <div className="mt-auto flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-3 border-t border-white/5">
                     <Button
                       size="sm"
                       onClick={() => setActiveStudyGroup(g)}
-                      className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-95 text-white font-semibold text-xs shadow-md shadow-indigo-500/20"
+                      className="flex-1 min-w-[150px] bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-95 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 min-h-[38px]"
                     >
-                      <Trophy size={13} /> Quests & Leaderboard
+                      <Trophy size={14} /> Quests & Leaderboard
                     </Button>
                     {g.isOwner ? (
-                      <>
-                        <Button size="sm" variant="secondary" onClick={() => setInviteGroup(g)}><UserCheck size={14} /> Invite</Button>
-                        <Button size="sm" variant="ghost" onClick={() => deleteGroup(g)} loading={busyId === g.id}><Trash2 size={14} /></Button>
-                      </>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button size="sm" variant="secondary" onClick={() => setInviteGroup(g)} className="min-h-[38px]"><UserCheck size={14} /> Invite</Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteGroup(g)} loading={busyId === g.id} className="min-h-[38px] text-rose-400 hover:text-rose-300"><Trash2 size={14} /></Button>
+                      </div>
                     ) : g.joined ? (
-                      <Button size="sm" variant="outline" onClick={() => leaveGroup(g)} loading={busyId === g.id}><LogOut size={14} /> Leave</Button>
+                      <Button size="sm" variant="outline" onClick={() => leaveGroup(g)} loading={busyId === g.id} className="min-h-[38px]"><LogOut size={14} /> Leave</Button>
                     ) : g.memberCount >= g.max_members ? (
-                      <span className="text-xs text-slate-400 self-center">Full</span>
+                      <span className="text-xs text-slate-400 self-center px-2 py-1">Full</span>
                     ) : (
-                      <Button size="sm" onClick={() => joinGroup(g)} loading={busyId === g.id}><Plus size={14} /> Join</Button>
+                      <Button size="sm" onClick={() => joinGroup(g)} loading={busyId === g.id} className="min-h-[38px]"><Plus size={14} /> Join</Button>
                     )}
                   </div>
                 </GlassCard>

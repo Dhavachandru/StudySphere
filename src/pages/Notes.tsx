@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Pin, Star, Trash2, FileText, X } from 'lucide-react';
+import { Plus, Search, Pin, Star, Trash2, FileText, X, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
@@ -97,15 +97,17 @@ export default function Notes() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Header (hidden on mobile when editing a note to maximize writing space) */}
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${active ? 'hidden lg:flex' : 'flex'}`}>
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold">Notes</h1>
-          <p className="text-sm text-slate-500 dark:text-white/50">Markdown notes with autosave, pin & favorites.</p>
+          <p className="text-sm text-slate-500 dark:text-white/50">Markdown notes with autosave, pin &amp; favorites.</p>
         </div>
-        <Button onClick={createNote}><Plus size={16} /> New note</Button>
+        <Button onClick={createNote} className="active:scale-95 shadow-md"><Plus size={16} /> New note</Button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Search and Filters (hidden on mobile when editing) */}
+      <div className={`flex flex-wrap gap-2 ${active ? 'hidden lg:flex' : 'flex'}`}>
         <div className="flex-1 min-w-[200px] relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input placeholder="Search notes…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10" />
@@ -117,38 +119,67 @@ export default function Notes() {
 
       {loading ? <Loading /> : error ? <ErrorState message={error} onRetry={load} /> : (
         <div className="grid lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-1 space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+          {/* Notes List (Hidden on mobile when a note is active) */}
+          <div className={`${active ? 'hidden lg:block' : 'block'} lg:col-span-1 space-y-2 max-h-[75vh] overflow-y-auto pr-1`}>
             {filtered.length === 0 ? (
               <EmptyState icon={<FileText size={24} />} title="No notes yet" hint="Create your first note to get started." action={<Button onClick={createNote} size="sm"><Plus size={14} /> New note</Button>} />
             ) : (
               <>
-                {pinned.length > 0 && <p className="text-xs text-slate-400 px-1 pt-1">Pinned</p>}
+                {pinned.length > 0 && <p className="text-xs text-slate-400 px-1 pt-1 font-semibold uppercase tracking-wider text-[11px]">Pinned</p>}
                 {pinned.map((n) => <NoteCard key={n.id} n={n} active={active?.id === n.id} onOpen={() => openNote(n)} onPin={() => togglePin(n)} onFav={() => toggleFav(n)} onDelete={() => remove(n)} />)}
-                {others.length > 0 && pinned.length > 0 && <p className="text-xs text-slate-400 px-1 pt-2">All notes</p>}
+                {others.length > 0 && pinned.length > 0 && <p className="text-xs text-slate-400 px-1 pt-2 font-semibold uppercase tracking-wider text-[11px]">All notes</p>}
                 {others.map((n) => <NoteCard key={n.id} n={n} active={active?.id === n.id} onOpen={() => openNote(n)} onPin={() => togglePin(n)} onFav={() => toggleFav(n)} onDelete={() => remove(n)} />)}
               </>
             )}
           </div>
 
-          <GlassCard className="lg:col-span-2 p-0 overflow-hidden">
+          {/* Note Editor Card (Takes full screen width on mobile when active) */}
+          <GlassCard className={`${!active ? 'hidden lg:block' : 'block'} lg:col-span-2 p-0 overflow-hidden`}>
             {active ? (
-              <div className="flex flex-col h-[70vh]">
-                <div className="flex items-center gap-2 p-3 border-b border-white/10">
-                  <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Note title" className="border-0 bg-transparent text-lg font-semibold focus:ring-0 px-2" />
-                  <select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} className="px-3 py-2 rounded-lg glass text-sm">
+              <div className="flex flex-col h-[75vh] lg:h-[70vh]">
+                <div className="flex items-center gap-2 p-3 border-b border-white/10 bg-black/5 dark:bg-white/5">
+                  {/* Mobile Back Button */}
+                  <button
+                    onClick={() => setActive(null)}
+                    className="lg:hidden p-2 rounded-xl glass hover:bg-white/10 text-indigo-400 font-semibold text-xs flex items-center gap-1 active:scale-90 transition shrink-0"
+                    aria-label="Back to notes list"
+                  >
+                    <ArrowLeft size={16} />
+                    <span>Back</span>
+                  </button>
+
+                  <Input
+                    value={draft.title}
+                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                    placeholder="Note title"
+                    className="border-0 bg-transparent text-base sm:text-lg font-semibold focus:ring-0 px-2 flex-1"
+                  />
+                  <select
+                    value={draft.category}
+                    onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+                    className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg glass text-xs sm:text-sm shrink-0"
+                  >
                     {['General', 'Study', 'Ideas', 'Tasks', 'Personal'].map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <button onClick={() => setActive(null)} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10"><X size={16} /></button>
+                  <button
+                    onClick={() => setActive(null)}
+                    className="hidden lg:flex p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-white transition"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
                 <Textarea
                   value={draft.content}
                   onChange={(e) => setDraft({ ...draft, content: e.target.value })}
                   placeholder="Start writing in markdown…"
-                  className="border-0 bg-transparent rounded-none focus:ring-0 flex-1 resize-none p-4 code-area"
+                  className="border-0 bg-transparent rounded-none focus:ring-0 flex-1 resize-none p-4 code-area text-sm leading-relaxed"
                 />
-                <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 text-xs text-slate-500 dark:text-white/50">
-                  <span>{draft.content.length} chars</span>
-                  <span>{saving ? 'Saving…' : 'Saved'}</span>
+                <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 text-xs text-slate-500 dark:text-white/50 bg-black/5 dark:bg-white/5">
+                  <span>{draft.content.length} characters</span>
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <span className={`w-2 h-2 rounded-full ${saving ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
+                    {saving ? 'Saving…' : 'Autosaved'}
+                  </span>
                 </div>
               </div>
             ) : (
@@ -164,23 +195,45 @@ export default function Notes() {
 function NoteCard({ n, active, onOpen, onPin, onFav, onDelete }: { n: Note; active: boolean; onOpen: () => void; onPin: () => void; onFav: () => void; onDelete: () => void }) {
   return (
     <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div onClick={onOpen} className={`cursor-pointer p-3 rounded-xl transition ${active ? 'glass-strong ring-2 ring-indigo-400/40' : 'glass hover:bg-white/70 dark:hover:bg-white/10'}`}>
+      <div onClick={onOpen} className={`cursor-pointer p-3.5 rounded-2xl transition active:scale-[0.98] ${active ? 'glass-strong ring-2 ring-indigo-400/50 shadow-lg shadow-indigo-500/10' : 'glass hover:bg-white/70 dark:hover:bg-white/10'}`}>
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-medium text-sm truncate">{n.title || 'Untitled'}</p>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-sm truncate">{n.title || 'Untitled'}</p>
             <p className="text-xs text-slate-500 dark:text-white/50 truncate mt-0.5">{n.content.slice(0, 60) || 'Empty note'}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <button onClick={(e) => { e.stopPropagation(); onPin(); }} className={`p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 ${n.pinned ? 'text-indigo-500' : 'text-slate-400'}`}><Pin size={13} fill={n.pinned ? 'currentColor' : 'none'} /></button>
-            <button onClick={(e) => { e.stopPropagation(); onFav(); }} className={`p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 ${n.favorite ? 'text-amber-500' : 'text-slate-400'}`}><Star size={13} fill={n.favorite ? 'currentColor' : 'none'} /></button>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-1 rounded hover:bg-rose-500/15 hover:text-rose-500 text-slate-400"><Trash2 size={13} /></button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onPin(); }}
+              className={`p-2 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 transition ${n.pinned ? 'text-indigo-400 bg-indigo-500/15' : 'text-slate-400'}`}
+              title="Pin note"
+              aria-label="Pin"
+            >
+              <Pin size={15} fill={n.pinned ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onFav(); }}
+              className={`p-2 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 transition ${n.favorite ? 'text-amber-400 bg-amber-500/15' : 'text-slate-400'}`}
+              title="Favorite note"
+              aria-label="Favorite"
+            >
+              <Star size={15} fill={n.favorite ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-2 rounded-xl hover:bg-rose-500/15 hover:text-rose-400 text-slate-400 active:scale-90 transition"
+              title="Delete note"
+              aria-label="Delete"
+            >
+              <Trash2 size={15} />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500">{n.category}</span>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400">{n.category}</span>
           <span className="text-[10px] text-slate-400">{new Date(n.updated_at).toLocaleDateString()}</span>
         </div>
       </div>
     </motion.div>
   );
 }
+

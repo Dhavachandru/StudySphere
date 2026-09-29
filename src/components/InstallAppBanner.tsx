@@ -31,7 +31,7 @@ export function InstallAppBanner() {
 
   return (
     <>
-      <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-40">
+      <div className="fixed bottom-20 sm:bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-40">
         <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-900/95 border border-indigo-500/30 text-white shadow-2xl shadow-indigo-500/20 backdrop-blur-xl">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/30">
             {platform === 'android' ? (
@@ -53,16 +53,16 @@ export function InstallAppBanner() {
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-md shadow-indigo-500/25 flex items-center gap-1 transition"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-md shadow-indigo-500/25 flex items-center gap-1.5 active:scale-95 transition min-h-[38px]"
             >
-              <Download size={13} /> Install
+              <Download size={14} /> Install
             </button>
             <button
               onClick={handleDismiss}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition"
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 active:scale-90 transition min-w-[36px] min-h-[36px] flex items-center justify-center"
               aria-label="Dismiss banner"
             >
-              <X size={15} />
+              <X size={16} />
             </button>
           </div>
         </div>
